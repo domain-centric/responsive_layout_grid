@@ -20,7 +20,7 @@ class ColumnExamplePage extends StatelessWidget {
     List<Widget> children = [];
     for (int i = 0; i < layout.nrOfColumns; i++) {
       children.add(Container(
-        color: Colors.blue[100],
+        color: Colors.white,
         child: Center(
           child: Text("Column ${i + 1}"),
         ),
