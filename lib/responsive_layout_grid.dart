@@ -75,7 +75,7 @@ class _ResponsiveLayout extends State<ResponsiveLayoutGrid> {
           rowChildren.add(columnGutter);
         }
         rowChildren.add(Container(
-          constraints: BoxConstraints(maxWidth: layout.columnWidth),
+          constraints: BoxConstraints(maxWidth: layout.columnWidth, minWidth: layout.columnWidth),
             child: cell));
         columnNr++;
 
