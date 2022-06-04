@@ -64,14 +64,12 @@ class _ResponsiveLayout extends State<ResponsiveLayoutGrid> {
       Layout layout = Layout(widget, constraints.maxWidth);
       var cells = widget.cellBuilder(layout);
 
-      List<Widget> colWidgets = [];
-      List<Widget> rowChildren = [];
+      List<Widget> colWidgets = []; // containing the rows and row gutters
+      List<Widget> rowChildren = []; // containing the cell and column gutters
       int columnNr = 0;
       for (Widget cell in cells) {
-        if (columnNr > 0) {
-          var columnGutter = SizedBox(width: widget.columnGutter);
-          rowChildren.add(columnGutter);
-        }
+        _addColumnGutterIfNeeded(columnNr, rowChildren);
+
         rowChildren.add(Container(
             constraints: BoxConstraints(
                 maxWidth: layout.columnWidth, minWidth: layout.columnWidth),
@@ -91,6 +89,13 @@ class _ResponsiveLayout extends State<ResponsiveLayoutGrid> {
         return Column(children: colWidgets);
       }
     });
+  }
+
+  void _addColumnGutterIfNeeded(int columnNr, List<Widget> rowChildren) {
+    if (columnNr > 0) {
+      var columnGutter = SizedBox(width: widget.columnGutter);
+      rowChildren.add(columnGutter);
+    }
   }
 
   _addRowIfNeeded(List<Widget> rowWidgets, List<Widget> colWidgets) {
