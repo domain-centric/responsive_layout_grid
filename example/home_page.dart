@@ -55,12 +55,15 @@ class ButtonGrid extends StatelessWidget {
         ]),
       );
 
-  Container _createTextBar(String text) {
-    return Container(
-          padding: const EdgeInsets.all(8),
-          color: Colors.grey,
-          child: Text(text,
-              style: const TextStyle(color: Colors.white, fontSize: 18)),
-        );
+  ResponsiveLayoutCell _createTextBar(String text) {
+    return ResponsiveLayoutCell(
+      columnSpan: ColumnSpan.remainingWidth(),
+      child:  Container(
+            padding: const EdgeInsets.all(8),
+            color: Colors.grey,
+            child: Text(text,
+                style: const TextStyle(color: Colors.white, fontSize: 18)),
+          ),
+    );
   }
 }

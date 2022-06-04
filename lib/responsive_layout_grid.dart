@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 
 /// Creates a [Responsive Layout Grid as defined in Material design](https://m3.material.io/foundations/adaptive-design/large-screens)
@@ -49,39 +51,50 @@ class ResponsiveLayoutGrid extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<StatefulWidget> createState() => _ResponsiveLayout();
+  State<StatefulWidget> createState() => _ResponsiveLayoutGrid();
 
   static List<Widget> Function(Layout layout) _createDefaultCellBuilder(
           List<Widget> cells) =>
       (columns) => cells;
 }
 
-class _ResponsiveLayout extends State<ResponsiveLayoutGrid> {
+class _ResponsiveLayoutGrid extends State<ResponsiveLayoutGrid> {
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
       Layout layout = Layout(widget, constraints.maxWidth);
-      var cells = widget.cellBuilder(layout);
 
       List<Widget> colWidgets = []; // containing the rows and row gutters
-      List<Widget> rowChildren = []; // containing the cell and column gutters
+      List<Widget> rowWidgets = []; // containing the cell and column gutters
       int columnNr = 0;
-      for (Widget cell in cells) {
-        _addColumnGutterIfNeeded(columnNr, rowChildren);
+      for (ResponsiveLayoutCell cell in cells(layout)) {
 
-        rowChildren.add(Container(
-            constraints: BoxConstraints(
-                maxWidth: layout.columnWidth, minWidth: layout.columnWidth),
-            child: cell));
-        columnNr++;
 
-        if (columnNr >= layout.nrOfColumns) {
-          _addRowIfNeeded(rowChildren, colWidgets);
-          columnNr = 0;
+        var remainingColumns=layout.nrOfColumns-columnNr;
+        var colSpan=cell.columnSpan;
+        if (!colSpan.fitsFor(remainingColumns)) {
+          _addRowIfNeeded(rowWidgets, colWidgets);
+          columnNr=0;
         }
+
+        remainingColumns=layout.nrOfColumns-columnNr;
+        var span=cell.columnSpan.spanFor(remainingColumns);
+        var width=span*layout.columnWidth+ (span-1)*layout.columnGutterWidth;
+
+        _addColumnGutterIfNeeded(columnNr, rowWidgets);
+        rowWidgets.add(Container(
+            constraints: BoxConstraints(
+                maxWidth: width, minWidth: width),
+            child: cell.child));
+        columnNr+=span;
+
+        // if (columnNr >= layout.nrOfColumns) {
+        //   _addRowIfNeeded(rowWidgets, colWidgets);
+        //   columnNr = 0;
+        // }
       }
-      _addRowIfNeeded(rowChildren, colWidgets);
+      _addRowIfNeeded(rowWidgets, colWidgets);
 
       if (colWidgets.length == 1) {
         return colWidgets.first;
@@ -112,6 +125,16 @@ class _ResponsiveLayout extends State<ResponsiveLayoutGrid> {
       var rowGutter = SizedBox(height: widget.rowGutter);
       colWidgets.add(rowGutter);
     }
+  }
+
+  List<ResponsiveLayoutCell> cells(Layout layout) {
+    var widgets = widget.cellBuilder(layout);
+    var responsiveLayoutCells = widgets
+        .map((widget) => widget is ResponsiveLayoutCell
+            ? widget
+            : ResponsiveLayoutCell(child: widget))
+        .toList();
+    return responsiveLayoutCells;
   }
 }
 
@@ -151,17 +174,17 @@ class Layout {
   }
 }
 
-enum ResponsiveLayoutChildPosition { nextColumn, nextRow }
+enum ResponsiveLayoutCellPosition { nextColumn, nextRow }
 
-class ResponsiveLayoutChild extends StatelessWidget {
-  final ResponsiveLayoutChildPosition position;
+class ResponsiveLayoutCell extends StatelessWidget {
+  final ResponsiveLayoutCellPosition position;
   final ColumnSpan columnSpan;
   final Widget child;
 
-  const ResponsiveLayoutChild({
+  const ResponsiveLayoutCell({
     Key? key,
-    required this.position,
-    required this.columnSpan,
+    this.position = ResponsiveLayoutCellPosition.nextColumn,
+    this.columnSpan = const ColumnSpan.auto(),
     required this.child,
   }) : super(key: key);
 
@@ -194,12 +217,12 @@ class ResponsiveLayoutChild extends StatelessWidget {
 
 class ColumnSpan {
   /// a constant value to indicate that the [max] is calculated based on the
-  /// minimum required width of the [ResponsiveLayoutChild]
-  static int automatic = -1;
+  /// minimum required width of the [ResponsiveLayoutCell]
+  static const int automatic = -1;
 
-  /// [min] number of columns that the [ResponsiveLayoutChild] must span
+  /// [min] number of columns that the [ResponsiveLayoutCell] must span
   /// [min] must be < [max].
-  /// The [ResponsiveLayoutChild] will be put on the next row
+  /// The [ResponsiveLayoutCell] will be put on the next row
   /// when [min] > remaining columns.
   /// Note that the [ColumnSpan] will be smaller
   /// when the number of columns of [ResponsiveLayoutGrid] > [min].
@@ -212,7 +235,7 @@ class ColumnSpan {
   /// * When [max] = null it means infinite (=the remaining available columns
   ///   in [ResponsiveLayoutGrid];
   /// * When [max] is [automatic] it means the [ColumnSpan] is calculated based
-  ///   on the minimum required width of the [ResponsiveLayoutChild]
+  ///   on the minimum required width of the [ResponsiveLayoutCell]
   final int? max;
 
   ColumnSpan.remainingWidth([this.min = 1]) : max = null {
@@ -228,12 +251,10 @@ class ColumnSpan {
   }
 
   /// The [ColumnSpan] is calculated based on the minimum width of
-  /// the [ResponsiveLayoutChild]
-  ColumnSpan.auto()
+  /// the [ResponsiveLayoutCell]
+  const ColumnSpan.auto()
       : min = 1,
-        max = automatic {
-    validateMinMax();
-  }
+        max = automatic;
 
   void validateMinMax() {
     if (max == automatic) {
@@ -248,6 +269,23 @@ class ColumnSpan {
       if (max != null && min > max!) {
         throw Exception("The min value must be < max");
       }
+    }
+  }
+
+  bool fitsFor(int remainingColumns) => min<=remainingColumns;
+
+  /// returns the number of columns based on the remaining number of columns
+  int spanFor(int remainingColumns) {
+    if (max==null) {
+      return remainingColumns;
+    }
+    if (max==automatic) {
+      return 1;// TODO calculate
+    }
+    if (max!>remainingColumns) {
+      return remainingColumns;
+    } else {
+      return max!;
     }
   }
 }
