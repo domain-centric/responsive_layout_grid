@@ -64,31 +64,51 @@ class _ResponsiveLayout extends State<ResponsiveLayoutGrid> {
       Layout layout = Layout(widget, constraints.maxWidth);
       var cells = widget.cellBuilder(layout);
 
-      List<Widget> rowsChildren=[];
-      List<Widget> rowChildren=[];
-      int columnNr=0;
+      List<Widget> colWidgets = [];
+      List<Widget> rowChildren = [];
+      int columnNr = 0;
       for (Widget cell in cells) {
-
-
-        if (columnNr>0) {
+        if (columnNr > 0) {
           var columnGutter = SizedBox(width: widget.columnGutter);
           rowChildren.add(columnGutter);
         }
         rowChildren.add(Container(
-          constraints: BoxConstraints(maxWidth: layout.columnWidth, minWidth: layout.columnWidth),
+            constraints: BoxConstraints(
+                maxWidth: layout.columnWidth, minWidth: layout.columnWidth),
             child: cell));
         columnNr++;
 
-
+        if (columnNr >= layout.nrOfColumns) {
+          _addRowIfNeeded(rowChildren, colWidgets);
+          columnNr = 0;
+        }
       }
-      Row row=Row(children: rowChildren,);
-      rowsChildren.add(row);
-      return row;
+      _addRowIfNeeded(rowChildren, colWidgets);
+
+      if (colWidgets.length == 1) {
+        return colWidgets.first;
+      } else {
+        return Column(children: colWidgets);
+      }
     });
   }
 
-}
+  _addRowIfNeeded(List<Widget> rowWidgets, List<Widget> colWidgets) {
+    if (rowWidgets.isNotEmpty) {
+      _addRowGutterIfNeeded(colWidgets);
+      Row row = Row(children: [...rowWidgets]);
+      colWidgets.add(row);
+      rowWidgets.clear();
+    }
+  }
 
+  void _addRowGutterIfNeeded(List<Widget> colWidgets) {
+    if (colWidgets.isNotEmpty) {
+      var rowGutter = SizedBox(height: widget.rowGutter);
+      colWidgets.add(rowGutter);
+    }
+  }
+}
 
 /// Contains all information to build a [ResponsiveLayoutGrid]
 /// It calculates the number of columns and width of these columns
