@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 
 /// Creates a [Responsive Layout Grid as defined in Material design](https://m3.material.io/foundations/adaptive-design/large-screens)
@@ -69,25 +67,24 @@ class _ResponsiveLayoutGrid extends State<ResponsiveLayoutGrid> {
       List<Widget> rowWidgets = []; // containing the cell and column gutters
       int columnNr = 0;
       for (ResponsiveLayoutCell cell in cells(layout)) {
-
-
-        var remainingColumns=layout.nrOfColumns-columnNr;
-        var colSpan=cell.columnSpan;
-        if (!colSpan.fitsFor(remainingColumns)) {
+        var remainingColumns = layout.nrOfColumns - columnNr;
+        var colSpan = cell.columnSpan;
+        if (cell.position == CellPosition.nextRow ||
+            !colSpan.fitsFor(remainingColumns)) {
           _addRowIfNeeded(rowWidgets, colWidgets);
-          columnNr=0;
+          columnNr = 0;
         }
 
-        remainingColumns=layout.nrOfColumns-columnNr;
-        var span=cell.columnSpan.spanFor(remainingColumns);
-        var width=span*layout.columnWidth+ (span-1)*layout.columnGutterWidth;
+        remainingColumns = layout.nrOfColumns - columnNr;
+        var span = cell.columnSpan.spanFor(remainingColumns);
+        var width =
+            span * layout.columnWidth + (span - 1) * layout.columnGutterWidth;
 
         _addColumnGutterIfNeeded(columnNr, rowWidgets);
         rowWidgets.add(Container(
-            constraints: BoxConstraints(
-                maxWidth: width, minWidth: width),
+            constraints: BoxConstraints(maxWidth: width, minWidth: width),
             child: cell.child));
-        columnNr+=span;
+        columnNr += span;
 
         // if (columnNr >= layout.nrOfColumns) {
         //   _addRowIfNeeded(rowWidgets, colWidgets);
@@ -174,16 +171,16 @@ class Layout {
   }
 }
 
-enum ResponsiveLayoutCellPosition { nextColumn, nextRow }
+enum CellPosition { nextColumn, nextRow }
 
 class ResponsiveLayoutCell extends StatelessWidget {
-  final ResponsiveLayoutCellPosition position;
+  final CellPosition position;
   final ColumnSpan columnSpan;
   final Widget child;
 
   const ResponsiveLayoutCell({
     Key? key,
-    this.position = ResponsiveLayoutCellPosition.nextColumn,
+    this.position = CellPosition.nextColumn,
     this.columnSpan = const ColumnSpan.auto(),
     required this.child,
   }) : super(key: key);
@@ -272,17 +269,17 @@ class ColumnSpan {
     }
   }
 
-  bool fitsFor(int remainingColumns) => min<=remainingColumns;
+  bool fitsFor(int remainingColumns) => min <= remainingColumns;
 
   /// returns the number of columns based on the remaining number of columns
   int spanFor(int remainingColumns) {
-    if (max==null) {
+    if (max == null) {
       return remainingColumns;
     }
-    if (max==automatic) {
-      return 1;// TODO calculate
+    if (max == automatic) {
+      return 1; // TODO calculate
     }
-    if (max!>remainingColumns) {
+    if (max! > remainingColumns) {
       return remainingColumns;
     } else {
       return max!;

@@ -57,6 +57,7 @@ class ButtonGrid extends StatelessWidget {
 
   ResponsiveLayoutCell _createTextBar(String text) {
     return ResponsiveLayoutCell(
+      position: CellPosition.nextRow,
       columnSpan: ColumnSpan.remainingWidth(),
       child:  Container(
             padding: const EdgeInsets.all(8),
