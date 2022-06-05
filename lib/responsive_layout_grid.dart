@@ -21,7 +21,7 @@ class ResponsiveLayoutGrid extends StatefulWidget {
   /// The [cells] (children) are the widgets that are displayed by this [ResponsiveLayoutGrid].
   /// [cells] are often [Widgets] that are wrapped in a [ResponsiveLayoutCell]
   /// [cells] that are not wrapped will automatically be wrapped in a [ResponsiveLayoutCell] later
-  late List<Widget> Function(Layout layout) cellBuilder;
+  late List<Widget> Function(ColumnInfo columnInfo) cellBuilder;
 
   static const double defaultGutter = 16;
   static const double defaultColumnWidth = 160;
@@ -51,9 +51,9 @@ class ResponsiveLayoutGrid extends StatefulWidget {
   @override
   State<StatefulWidget> createState() => _ResponsiveLayoutGrid();
 
-  static List<Widget> Function(Layout layout) _createDefaultCellBuilder(
+  static List<Widget> Function(ColumnInfo columnInfo) _createDefaultCellBuilder(
           List<Widget> cells) =>
-      (columns) => cells;
+      (columnInfo) => cells;
 }
 
 class _ResponsiveLayoutGrid extends State<ResponsiveLayoutGrid> {
@@ -61,13 +61,13 @@ class _ResponsiveLayoutGrid extends State<ResponsiveLayoutGrid> {
   Widget build(BuildContext context) {
     return LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
-      Layout layout = Layout(widget, constraints.maxWidth);
+      ColumnInfo columnInfo = ColumnInfo(widget, constraints.maxWidth);
 
       List<Widget> colWidgets = []; // containing the rows and row gutters
       List<Widget> rowWidgets = []; // containing the cell and column gutters
       int columnNr = 0;
-      for (ResponsiveLayoutCell cell in cells(layout)) {
-        var remainingColumns = layout.nrOfColumns - columnNr;
+      for (ResponsiveLayoutCell cell in cells(columnInfo)) {
+        var remainingColumns = columnInfo.nrOfColumns - columnNr;
         var colSpan = cell.columnSpan;
         if (cell.position == CellPosition.nextRow ||
             !colSpan.fitsFor(remainingColumns)) {
@@ -75,10 +75,10 @@ class _ResponsiveLayoutGrid extends State<ResponsiveLayoutGrid> {
           columnNr = 0;
         }
 
-        remainingColumns = layout.nrOfColumns - columnNr;
+        remainingColumns = columnInfo.nrOfColumns - columnNr;
         var span = cell.columnSpan.spanFor(remainingColumns);
         var width =
-            span * layout.columnWidth + (span - 1) * layout.columnGutterWidth;
+            span * columnInfo.columnWidth + (span - 1) * columnInfo.columnGutterWidth;
 
         _addColumnGutterIfNeeded(columnNr, rowWidgets);
         rowWidgets.add(Container(
@@ -86,10 +86,6 @@ class _ResponsiveLayoutGrid extends State<ResponsiveLayoutGrid> {
             child: cell.child));
         columnNr += span;
 
-        // if (columnNr >= layout.nrOfColumns) {
-        //   _addRowIfNeeded(rowWidgets, colWidgets);
-        //   columnNr = 0;
-        // }
       }
       _addRowIfNeeded(rowWidgets, colWidgets);
 
@@ -124,8 +120,8 @@ class _ResponsiveLayoutGrid extends State<ResponsiveLayoutGrid> {
     }
   }
 
-  List<ResponsiveLayoutCell> cells(Layout layout) {
-    var widgets = widget.cellBuilder(layout);
+  List<ResponsiveLayoutCell> cells(ColumnInfo columnInfo) {
+    var widgets = widget.cellBuilder(columnInfo);
     var responsiveLayoutCells = widgets
         .map((widget) => widget is ResponsiveLayoutCell
             ? widget
@@ -135,15 +131,17 @@ class _ResponsiveLayoutGrid extends State<ResponsiveLayoutGrid> {
   }
 }
 
+
+
 /// Contains all information to build a [ResponsiveLayoutGrid]
 /// It calculates the number of columns and width of these columns
 /// in the available with in the [ResponsiveLayoutGrid]
-class Layout {
+class ColumnInfo {
   late int nrOfColumns;
   late double columnWidth;
   late double columnGutterWidth;
 
-  Layout(ResponsiveLayoutGrid responsiveLayout, double availableWidth) {
+  ColumnInfo(ResponsiveLayoutGrid responsiveLayout, double availableWidth) {
     columnGutterWidth = responsiveLayout.columnGutter;
     nrOfColumns = _calculateNrOfColumns(responsiveLayout, availableWidth);
     columnWidth = _calculateColumnsWidth(availableWidth);
@@ -167,7 +165,7 @@ class Layout {
 
   @override
   String toString() {
-    return 'Layout{nrOfColumns: $nrOfColumns, columnWidth: $columnWidth, columnGutterWidth: $columnGutterWidth}';
+    return 'ColumnInfo{nrOfColumns: $nrOfColumns, columnWidth: $columnWidth, columnGutterWidth: $columnGutterWidth}';
   }
 }
 

@@ -16,9 +16,9 @@ class ColumnExamplePage extends StatelessWidget {
               color: Colors.grey,
               child: ResponsiveLayoutGrid.builder(cellBuilder: _cellBuilder))));
 
-  List<Widget> _cellBuilder(Layout layout) {
+  List<Widget> _cellBuilder(ColumnInfo columnInfo) {
     List<Widget> children = [];
-    for (int i = 0; i < layout.nrOfColumns; i++) {
+    for (int i = 0; i < columnInfo.nrOfColumns; i++) {
       children.add(Container(
         color: Colors.white,
         child: Center(
