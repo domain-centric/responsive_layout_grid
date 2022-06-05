@@ -9,11 +9,11 @@ class ResponsiveLayoutGrid extends StatefulWidget {
   /// in the available width and is a [MaterialMeasurement]
   final double minimumColumnWidth;
 
-  /// The [columnGutter] is the space between columns. It is a [MaterialMeasurement].
-  final double columnGutter;
+  /// The [columnGutterWidth] is the space between columns. It is a [MaterialMeasurement].
+  final double columnGutterWidth;
 
-  /// The [rowGutter] is the space between rows. It is a [MaterialMeasurement].
-  final double rowGutter;
+  /// The [rowGutterHeight] is the space between rows. It is a [MaterialMeasurement].
+  final double rowGutterHeight;
 
   /// A [cellBuilder] is a function that creates [Widget]s that represent the cells.
   /// The function can use information of the size and position of the [Column]s
@@ -21,7 +21,7 @@ class ResponsiveLayoutGrid extends StatefulWidget {
   /// The [cells] (children) are the widgets that are displayed by this [ResponsiveLayoutGrid].
   /// [cells] are often [Widgets] that are wrapped in a [ResponsiveLayoutCell]
   /// [cells] that are not wrapped will automatically be wrapped in a [ResponsiveLayoutCell] later
-  late List<Widget> Function(ColumnInfo columnInfo) cellBuilder;
+  late List<Widget> Function(LayoutDimensions layoutDimensions) cellBuilder;
 
   static const double defaultGutter = 16;
   static const double defaultColumnWidth = 160;
@@ -29,8 +29,8 @@ class ResponsiveLayoutGrid extends StatefulWidget {
   ResponsiveLayoutGrid(
       {Key? key,
       this.minimumColumnWidth = defaultColumnWidth,
-      this.columnGutter = defaultGutter,
-      this.rowGutter = defaultGutter,
+      this.columnGutterWidth = defaultGutter,
+      this.rowGutterHeight = defaultGutter,
 
       /// The [cells] (children) are the widgets that are displayed by this [ResponsiveLayout].
       /// [cells] are often [Widgets] that are wrapped in a [ResponsiveLayoutCell]
@@ -43,17 +43,17 @@ class ResponsiveLayoutGrid extends StatefulWidget {
   ResponsiveLayoutGrid.builder({
     Key? key,
     this.minimumColumnWidth = defaultColumnWidth,
-    this.columnGutter = defaultGutter,
-    this.rowGutter = defaultGutter,
+    this.columnGutterWidth = defaultGutter,
+    this.rowGutterHeight = defaultGutter,
     required this.cellBuilder,
   }) : super(key: key);
 
   @override
   State<StatefulWidget> createState() => _ResponsiveLayoutGrid();
 
-  static List<Widget> Function(ColumnInfo columnInfo) _createDefaultCellBuilder(
-          List<Widget> cells) =>
-      (columnInfo) => cells;
+  static List<Widget> Function(LayoutDimensions layoutDimensions)
+      _createDefaultCellBuilder(List<Widget> cells) =>
+          (layoutDimensions) => cells;
 }
 
 class _ResponsiveLayoutGrid extends State<ResponsiveLayoutGrid> {
@@ -61,67 +61,23 @@ class _ResponsiveLayoutGrid extends State<ResponsiveLayoutGrid> {
   Widget build(BuildContext context) {
     return LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
-      ColumnInfo columnInfo = ColumnInfo(widget, constraints.maxWidth);
+      LayoutDimensions layoutDimensions =
+          LayoutDimensions(widget, constraints.maxWidth);
 
-      List<Widget> colWidgets = []; // containing the rows and row gutters
-      List<Widget> rowWidgets = []; // containing the cell and column gutters
-      int columnNr = 0;
-      for (ResponsiveLayoutCell cell in cells(columnInfo)) {
-        var remainingColumns = columnInfo.nrOfColumns - columnNr;
-        var colSpan = cell.columnSpan;
+      var cellLayoutBuilder = CellLayoutBuilder(layoutDimensions);
+      for (ResponsiveLayoutCell cell in cells(layoutDimensions)) {
         if (cell.position == CellPosition.nextRow ||
-            !colSpan.fitsFor(remainingColumns)) {
-          _addRowIfNeeded(rowWidgets, colWidgets);
-          columnNr = 0;
+            !cellLayoutBuilder.cellFitsInCurrentRow(cell)) {
+          cellLayoutBuilder.goToNextRow();
         }
-
-        remainingColumns = columnInfo.nrOfColumns - columnNr;
-        var span = cell.columnSpan.spanFor(remainingColumns);
-        var width =
-            span * columnInfo.columnWidth + (span - 1) * columnInfo.columnGutterWidth;
-
-        _addColumnGutterIfNeeded(columnNr, rowWidgets);
-        rowWidgets.add(Container(
-            constraints: BoxConstraints(maxWidth: width, minWidth: width),
-            child: cell.child));
-        columnNr += span;
-
+        cellLayoutBuilder.addCell(cell);
       }
-      _addRowIfNeeded(rowWidgets, colWidgets);
-
-      if (colWidgets.length == 1) {
-        return colWidgets.first;
-      } else {
-        return Column(children: colWidgets);
-      }
+      return cellLayoutBuilder.build();
     });
   }
 
-  void _addColumnGutterIfNeeded(int columnNr, List<Widget> rowChildren) {
-    if (columnNr > 0) {
-      var columnGutter = SizedBox(width: widget.columnGutter);
-      rowChildren.add(columnGutter);
-    }
-  }
-
-  _addRowIfNeeded(List<Widget> rowWidgets, List<Widget> colWidgets) {
-    if (rowWidgets.isNotEmpty) {
-      _addRowGutterIfNeeded(colWidgets);
-      Row row = Row(children: [...rowWidgets]);
-      colWidgets.add(row);
-      rowWidgets.clear();
-    }
-  }
-
-  void _addRowGutterIfNeeded(List<Widget> colWidgets) {
-    if (colWidgets.isNotEmpty) {
-      var rowGutter = SizedBox(height: widget.rowGutter);
-      colWidgets.add(rowGutter);
-    }
-  }
-
-  List<ResponsiveLayoutCell> cells(ColumnInfo columnInfo) {
-    var widgets = widget.cellBuilder(columnInfo);
+  List<ResponsiveLayoutCell> cells(LayoutDimensions layoutDimensions) {
+    var widgets = widget.cellBuilder(layoutDimensions);
     var responsiveLayoutCells = widgets
         .map((widget) => widget is ResponsiveLayoutCell
             ? widget
@@ -131,18 +87,94 @@ class _ResponsiveLayoutGrid extends State<ResponsiveLayoutGrid> {
   }
 }
 
+enum CellDirection { leftToRight, rightToLeft }
 
+class CellLayoutBuilder {
+  /// containing the rows and row gutters
+  final List<Widget> colWidgets = [];
+
+  /// containing the cell and column gutters
+  final List<Widget> rowWidgets = [];
+  final LayoutDimensions layoutDimensions;
+  CellDirection cellDirection = CellDirection.leftToRight;
+  int columnNr = 0;
+
+  CellLayoutBuilder(this.layoutDimensions);
+
+  Widget build() {
+    _addLastRowIfNeeded();
+    if (colWidgets.length == 1) {
+      return colWidgets.first;
+    } else {
+      return Column(children: colWidgets);
+    }
+  }
+
+  void _addLastRowIfNeeded() {
+    if (rowWidgets.isNotEmpty) {
+      goToNextRow();
+    }
+  }
+
+  void _addColumnGutterIfNeeded(int columnNr, List<Widget> rowChildren) {
+    if (columnNr > 0) {
+      var columnGutter = SizedBox(width: layoutDimensions.columnGutterWidth);
+      rowChildren.add(columnGutter);
+    }
+  }
+
+  /// returns the remaining empty columns of the current row
+  int get remainingColumns => cellDirection == CellDirection.leftToRight
+      ? layoutDimensions.nrOfColumns - columnNr
+      : columnNr;
+
+  bool cellFitsInCurrentRow(ResponsiveLayoutCell cell) =>
+      cell.columnSpan.fitsFor(remainingColumns);
+
+  void goToNextRow() {
+    _addRowGutterIfNeeded();
+    Row row = Row(children: [...rowWidgets]);
+    colWidgets.add(row);
+    rowWidgets.clear();
+    columnNr = cellDirection == CellDirection.leftToRight
+        ? 0
+        : layoutDimensions.nrOfColumns;
+  }
+
+  void _addRowGutterIfNeeded() {
+    if (colWidgets.isNotEmpty) {
+      var rowGutter = SizedBox(height: layoutDimensions.rowGutterHeight);
+      colWidgets.add(rowGutter);
+    }
+  }
+
+  void addCell(ResponsiveLayoutCell cell) {
+    var span = cell.columnSpan.spanFor(remainingColumns);
+    var width = span * layoutDimensions.columnWidth +
+        (span - 1) * layoutDimensions.columnGutterWidth;
+
+    _addColumnGutterIfNeeded(columnNr, rowWidgets);
+    var cellWithWidthContraints = Container(
+        constraints: BoxConstraints(maxWidth: width, minWidth: width),
+        child: cell.child);
+    rowWidgets.add(cellWithWidthContraints);
+    columnNr += span;
+  }
+}
 
 /// Contains all information to build a [ResponsiveLayoutGrid]
 /// It calculates the number of columns and width of these columns
 /// in the available with in the [ResponsiveLayoutGrid]
-class ColumnInfo {
+class LayoutDimensions {
   late int nrOfColumns;
   late double columnWidth;
   late double columnGutterWidth;
+  late double rowGutterHeight;
 
-  ColumnInfo(ResponsiveLayoutGrid responsiveLayout, double availableWidth) {
-    columnGutterWidth = responsiveLayout.columnGutter;
+  LayoutDimensions(
+      ResponsiveLayoutGrid responsiveLayout, double availableWidth) {
+    columnGutterWidth = responsiveLayout.columnGutterWidth;
+    rowGutterHeight = responsiveLayout.rowGutterHeight;
     nrOfColumns = _calculateNrOfColumns(responsiveLayout, availableWidth);
     columnWidth = _calculateColumnsWidth(availableWidth);
   }
@@ -161,11 +193,6 @@ class ColumnInfo {
   double _calculateColumnsWidth(double availableWidth) {
     double totalColumnGuttersWidth = (nrOfColumns - 1) * columnGutterWidth;
     return (availableWidth - totalColumnGuttersWidth) / nrOfColumns;
-  }
-
-  @override
-  String toString() {
-    return 'ColumnInfo{nrOfColumns: $nrOfColumns, columnWidth: $columnWidth, columnGutterWidth: $columnGutterWidth}';
   }
 }
 
