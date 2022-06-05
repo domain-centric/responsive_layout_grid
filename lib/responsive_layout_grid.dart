@@ -15,6 +15,9 @@ class ResponsiveLayoutGrid extends StatefulWidget {
   /// The [rowGutterHeight] is the space between rows. It is a [MaterialMeasurement].
   final double rowGutterHeight;
 
+  /// null=unlimited
+  final int? maxNumberOfColumns;
+
   /// A [cellBuilder] is a function that creates [Widget]s that represent the cells.
   /// The function can use information of the size and position of the [Column]s
   ///
@@ -31,6 +34,7 @@ class ResponsiveLayoutGrid extends StatefulWidget {
       this.minimumColumnWidth = defaultColumnWidth,
       this.columnGutterWidth = defaultGutter,
       this.rowGutterHeight = defaultGutter,
+      this.maxNumberOfColumns,
 
       /// The [cells] (children) are the widgets that are displayed by this [ResponsiveLayout].
       /// [cells] are often [Widgets] that are wrapped in a [ResponsiveLayoutCell]
@@ -45,6 +49,7 @@ class ResponsiveLayoutGrid extends StatefulWidget {
     this.minimumColumnWidth = defaultColumnWidth,
     this.columnGutterWidth = defaultGutter,
     this.rowGutterHeight = defaultGutter,
+    this.maxNumberOfColumns,
     required this.cellBuilder,
   }) : super(key: key);
 
@@ -133,7 +138,11 @@ class CellLayoutBuilder {
 
   void goToNextRow() {
     _addRowGutterIfNeeded();
-    Row row = Row(children: [...rowWidgets]);
+    Row row = Row(children: [
+      if (layoutDimensions.marginWidth>0) SizedBox(width:layoutDimensions.marginWidth),
+      ...rowWidgets,
+      if (layoutDimensions.marginWidth>0) SizedBox(width:layoutDimensions.marginWidth),
+    ]);
     colWidgets.add(row);
     rowWidgets.clear();
     columnNr = cellDirection == CellDirection.leftToRight
@@ -168,15 +177,20 @@ class CellLayoutBuilder {
 class LayoutDimensions {
   late int nrOfColumns;
   late double columnWidth;
+  /// the space between columns as [MaterialMeasurement]
   late double columnGutterWidth;
+  /// the space between rows as [MaterialMeasurement]
   late double rowGutterHeight;
+  /// the space left and right of the columns as [MaterialMeasurement]
+  late double marginWidth;
 
   LayoutDimensions(
       ResponsiveLayoutGrid responsiveLayout, double availableWidth) {
     columnGutterWidth = responsiveLayout.columnGutterWidth;
     rowGutterHeight = responsiveLayout.rowGutterHeight;
     nrOfColumns = _calculateNrOfColumns(responsiveLayout, availableWidth);
-    columnWidth = _calculateColumnsWidth(availableWidth);
+    marginWidth= _calculateMargin(responsiveLayout, availableWidth);
+    columnWidth = _calculateColumnsWidth(availableWidth-2*marginWidth);
   }
 
   int _calculateNrOfColumns(
@@ -184,15 +198,35 @@ class LayoutDimensions {
     if (availableWidth < responsiveLayout.minimumColumnWidth) {
       return 0;
     } else {
-      return ((availableWidth + columnGutterWidth) /
+      var calculatedNrOfColumns = ((availableWidth + columnGutterWidth) /
               (responsiveLayout.minimumColumnWidth + columnGutterWidth))
           .truncate();
+      if (responsiveLayout.maxNumberOfColumns != null &&
+          calculatedNrOfColumns > responsiveLayout.maxNumberOfColumns!) {
+        return responsiveLayout.maxNumberOfColumns!;
+      }
+      return calculatedNrOfColumns;
     }
   }
 
   double _calculateColumnsWidth(double availableWidth) {
     double totalColumnGuttersWidth = (nrOfColumns - 1) * columnGutterWidth;
     return (availableWidth - totalColumnGuttersWidth) / nrOfColumns;
+  }
+
+  double _calculateMargin(ResponsiveLayoutGrid responsiveLayout, double availableWidth) {
+    if (responsiveLayout.maxNumberOfColumns==null) {
+      return 0;
+    }
+    if (nrOfColumns<responsiveLayout.maxNumberOfColumns!) {
+      return 0;
+    }
+    var maxWidth=(nrOfColumns+1)*responsiveLayout.minimumColumnWidth+ nrOfColumns*responsiveLayout.columnGutterWidth;
+    if (availableWidth<maxWidth) {
+      return 0;
+    } else {
+      return (availableWidth-maxWidth)/2;
+    }
   }
 }
 
