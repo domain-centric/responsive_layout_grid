@@ -21,72 +21,74 @@ class ButtonGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) =>
-      Padding(
-        padding: const EdgeInsets.all(32),
-        child: ResponsiveLayoutGrid(
-            maxNumberOfColumns: 4,
-            cells: [
-              ResponsiveLayoutCell(
-                position: CellPosition.nextRow,
-                columnSpan: ColumnSpan.remainingWidth(),
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  color: Colors.grey,
-                  child: const Text("Examples",
-                      style: TextStyle(color: Colors.white, fontSize: 18)),
+      SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: ResponsiveLayoutGrid(
+              maxNumberOfColumns: 4,
+              cells: [
+                ResponsiveLayoutCell(
+                  position: CellPosition.nextRow,
+                  columnSpan: ColumnSpan.remainingWidth(),
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    color: Colors.grey,
+                    child: const Text("Examples",
+                        style: TextStyle(color: Colors.white, fontSize: 18)),
+                  ),
                 ),
-              ),
-              ResponsiveLayoutCell(
-                position: CellPosition.nextRow,
-                child: OutlinedButton(
-                    onPressed: () {
-                      Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => const ColumnExamplePage()));
-                    },
-                    child: const Text('Columns')),
-              ),
-              ResponsiveLayoutCell(
-                position: CellPosition.nextRow,
-                child: OutlinedButton(
-                    onPressed: () {
-                      Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => const ColumnExamplePage()));
-                    },
-                    child: const Text('Form')),
-              ),
-              ResponsiveLayoutCell(
-                position: CellPosition.nextRow,
-                columnSpan: ColumnSpan.remainingWidth(),
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  color: Colors.grey,
-                  child: const Text("Documentation",
-                      style: TextStyle(color: Colors.white, fontSize: 18)),
+                ResponsiveLayoutCell(
+                  position: CellPosition.nextRow,
+                  child: OutlinedButton(
+                      onPressed: () {
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => const ColumnExamplePage()));
+                      },
+                      child: const Text('Columns')),
                 ),
-              ),
-              ResponsiveLayoutCell(
-                position: CellPosition.nextRow,
-                child: OutlinedButton(
-                    onPressed: () {
-                      launchUrlString(
-                          'https://material.io/design/layout/responsive-layout-grid.html');
-                    },
-                    child: const Text('Material Design V2')),
-              ),
-              ResponsiveLayoutCell(
-                position: CellPosition.nextRow,
-                child: OutlinedButton(
-                    onPressed: () {
-                      launchUrlString(
-                          'https://m3.material.io/foundations/adaptive-design/large-screens/overview');
-                    },
-                    child: const Text('Material Design V3')),
-              ),
-            ]),
+                ResponsiveLayoutCell(
+                  position: CellPosition.nextRow,
+                  child: OutlinedButton(
+                      onPressed: () {
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => const ColumnExamplePage()));
+                      },
+                      child: const Text('Form')),
+                ),
+                ResponsiveLayoutCell(
+                  position: CellPosition.nextRow,
+                  columnSpan: ColumnSpan.remainingWidth(),
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    color: Colors.grey,
+                    child: const Text("Documentation",
+                        style: TextStyle(color: Colors.white, fontSize: 18)),
+                  ),
+                ),
+                ResponsiveLayoutCell(
+                  position: CellPosition.nextRow,
+                  child: OutlinedButton(
+                      onPressed: () {
+                        launchUrlString(
+                            'https://material.io/design/layout/responsive-layout-grid.html');
+                      },
+                      child: const Text('Material Design V2')),
+                ),
+                ResponsiveLayoutCell(
+                  position: CellPosition.nextRow,
+                  child: OutlinedButton(
+                      onPressed: () {
+                        launchUrlString(
+                            'https://m3.material.io/foundations/adaptive-design/large-screens/overview');
+                      },
+                      child: const Text('Material Design V3')),
+                ),
+              ]),
+        ),
       );
 
 }
