@@ -107,7 +107,7 @@ class CellLayoutBuilder {
   CellLayoutBuilder(this.layoutDimensions);
 
   Widget build() {
-    _addLastRowIfNeeded();
+    goToNextRow();
     if (colWidgets.length == 1) {
       return colWidgets.first;
     } else {
@@ -115,11 +115,7 @@ class CellLayoutBuilder {
     }
   }
 
-  void _addLastRowIfNeeded() {
-    if (rowWidgets.isNotEmpty) {
-      goToNextRow();
-    }
-  }
+
 
   void _addColumnGutterIfNeeded(int columnNr, List<Widget> rowChildren) {
     if (columnNr > 0) {
@@ -138,16 +134,20 @@ class CellLayoutBuilder {
 
   void goToNextRow() {
     _addRowGutterIfNeeded();
-    Row row = Row(children: [
-      if (layoutDimensions.marginWidth>0) SizedBox(width:layoutDimensions.marginWidth),
-      ...rowWidgets,
-      if (layoutDimensions.marginWidth>0) SizedBox(width:layoutDimensions.marginWidth),
-    ]);
-    colWidgets.add(row);
-    rowWidgets.clear();
-    columnNr = cellDirection == CellDirection.leftToRight
-        ? 0
-        : layoutDimensions.nrOfColumns;
+    if (rowWidgets.isNotEmpty) {
+      Row row = Row(children: [
+        if (layoutDimensions.marginWidth > 0) SizedBox(
+            width: layoutDimensions.marginWidth),
+        ...rowWidgets,
+        if (layoutDimensions.marginWidth > 0) SizedBox(
+            width: layoutDimensions.marginWidth),
+      ]);
+      colWidgets.add(row);
+      rowWidgets.clear();
+    }
+      columnNr = cellDirection == CellDirection.leftToRight
+          ? 0
+          : layoutDimensions.nrOfColumns;
   }
 
   void _addRowGutterIfNeeded() {
@@ -306,6 +306,8 @@ class ColumnSpan {
     validateMinMax();
   }
 
+  const ColumnSpan.size(int columns): min=columns, max=columns;
+
   /// The [ColumnSpan] is calculated based on the minimum width of
   /// the [ResponsiveLayoutCell]
   const ColumnSpan.auto()
@@ -344,6 +346,8 @@ class ColumnSpan {
       return max!;
     }
   }
+
+
 }
 
 /// Distances in flutter are in
