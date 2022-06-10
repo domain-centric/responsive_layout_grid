@@ -29,7 +29,7 @@ class ButtonGrid extends StatelessWidget {
               maxNumberOfColumns: 4,
               cells: [
                 ResponsiveLayoutCell(
-                  position: CellPosition.nextRow,
+                  position: CellPosition.nextRowLeftToRight,
                   columnSpan: ColumnSpan.remainingWidth(),
                   child: Container(
                     padding: const EdgeInsets.all(8),
@@ -39,7 +39,7 @@ class ButtonGrid extends StatelessWidget {
                   ),
                 ),
                 ResponsiveLayoutCell(
-                  position: CellPosition.nextRow,
+                  position: CellPosition.nextRowLeftToRight,
                   child: OutlinedButton(
                       onPressed: () {
                         Navigator.push(
@@ -50,7 +50,7 @@ class ButtonGrid extends StatelessWidget {
                       child: const Text('Columns')),
                 ),
                 ResponsiveLayoutCell(
-                  position: CellPosition.nextRow,
+                  position: CellPosition.nextRowLeftToRight,
                   child: OutlinedButton(
                       onPressed: () {
                         Navigator.push(
@@ -61,7 +61,7 @@ class ButtonGrid extends StatelessWidget {
                       child: const Text('Form')),
                 ),
                 ResponsiveLayoutCell(
-                  position: CellPosition.nextRow,
+                  position: CellPosition.nextRowLeftToRight,
                   columnSpan: ColumnSpan.remainingWidth(),
                   child: Container(
                     padding: const EdgeInsets.all(8),
@@ -71,7 +71,7 @@ class ButtonGrid extends StatelessWidget {
                   ),
                 ),
                 ResponsiveLayoutCell(
-                  position: CellPosition.nextRow,
+                  position: CellPosition.nextRowLeftToRight,
                   child: OutlinedButton(
                       onPressed: () {
                         launchUrlString(
@@ -80,7 +80,7 @@ class ButtonGrid extends StatelessWidget {
                       child: const Text('Material Design V2')),
                 ),
                 ResponsiveLayoutCell(
-                  position: CellPosition.nextRow,
+                  position: CellPosition.nextRowLeftToRight,
                   child: OutlinedButton(
                       onPressed: () {
                         launchUrlString(
@@ -93,4 +93,3 @@ class ButtonGrid extends StatelessWidget {
       );
 
 }
-

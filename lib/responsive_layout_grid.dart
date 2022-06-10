@@ -71,9 +71,10 @@ class _ResponsiveLayoutGrid extends State<ResponsiveLayoutGrid> {
 
       var cellLayoutBuilder = CellLayoutBuilder(layoutDimensions);
       for (ResponsiveLayoutCell cell in cells(layoutDimensions)) {
-        if (cell.position == CellPosition.nextRow ||
+        if (cell.position == CellPosition.nextRowLeftToRight ||
+            cell.position == CellPosition.nextRowRightToLeft ||
             !cellLayoutBuilder.cellFitsInCurrentRow(cell)) {
-          cellLayoutBuilder.goToNextRow();
+          cellLayoutBuilder.goToNextRow(cell.position);
         }
         cellLayoutBuilder.addCell(cell);
       }
@@ -107,7 +108,7 @@ class CellLayoutBuilder {
   CellLayoutBuilder(this.layoutDimensions);
 
   Widget build() {
-    goToNextRow();
+    goToNextRow(CellPosition.nextRowLeftToRight);
     if (colWidgets.length == 1) {
       return colWidgets.first;
     } else {
@@ -115,39 +116,57 @@ class CellLayoutBuilder {
     }
   }
 
-
-
   void _addColumnGutterIfNeeded(int columnNr, List<Widget> rowChildren) {
     if (columnNr > 0) {
       var columnGutter = SizedBox(width: layoutDimensions.columnGutterWidth);
-      rowChildren.add(columnGutter);
+      _addToRowWidgets(columnGutter);
     }
   }
 
   /// returns the remaining empty columns of the current row
-  int get remainingColumns => cellDirection == CellDirection.leftToRight
-      ? layoutDimensions.nrOfColumns - columnNr
-      : columnNr;
+  int get remainingColumns => layoutDimensions.nrOfColumns - columnNr;
+
+  // cellDirection == CellDirection.leftToRight
+  // ? layoutDimensions.nrOfColumns - columnNr
+  // : columnNr;
 
   bool cellFitsInCurrentRow(ResponsiveLayoutCell cell) =>
       cell.columnSpan.fitsFor(remainingColumns);
 
-  void goToNextRow() {
-    _addRowGutterIfNeeded();
+  void goToNextRow(CellPosition cellPosition) {
     if (rowWidgets.isNotEmpty) {
+      _addRowGutterIfNeeded();
       Row row = Row(children: [
-        if (layoutDimensions.marginWidth > 0) SizedBox(
-            width: layoutDimensions.marginWidth),
+        if (layoutDimensions.marginWidth > 0)
+          SizedBox(width: layoutDimensions.marginWidth),
+        if (cellDirection == CellDirection.rightToLeft)
+          SizedBox(
+              width: (layoutDimensions.nrOfColumns - columnNr) *
+                      layoutDimensions.columnWidth +
+                  (layoutDimensions.nrOfColumns - columnNr) *
+                      layoutDimensions.columnGutterWidth),
         ...rowWidgets,
-        if (layoutDimensions.marginWidth > 0) SizedBox(
-            width: layoutDimensions.marginWidth),
+        if (layoutDimensions.marginWidth > 0)
+          SizedBox(width: layoutDimensions.marginWidth),
       ]);
       colWidgets.add(row);
       rowWidgets.clear();
     }
-      columnNr = cellDirection == CellDirection.leftToRight
-          ? 0
-          : layoutDimensions.nrOfColumns;
+
+    determineCellDirection(cellPosition);
+
+    // columnNr = cellDirection == CellDirection.leftToRight
+    //     ? 0
+    //     : layoutDimensions.nrOfColumns;
+    columnNr = 0;
+  }
+
+  void determineCellDirection(CellPosition cellPosition) {
+    if (cellPosition == CellPosition.nextRowLeftToRight) {
+      cellDirection = CellDirection.leftToRight;
+    } else if (cellPosition == CellPosition.nextRowRightToLeft) {
+      cellDirection = CellDirection.rightToLeft;
+    }
   }
 
   void _addRowGutterIfNeeded() {
@@ -163,11 +182,21 @@ class CellLayoutBuilder {
         (span - 1) * layoutDimensions.columnGutterWidth;
 
     _addColumnGutterIfNeeded(columnNr, rowWidgets);
-    var cellWithWidthContraints = Container(
+    var cellWithWidthConstraints = Container(
         constraints: BoxConstraints(maxWidth: width, minWidth: width),
         child: cell.child);
-    rowWidgets.add(cellWithWidthContraints);
+
+    _addToRowWidgets(cellWithWidthConstraints);
+
     columnNr += span;
+  }
+
+  void _addToRowWidgets(Widget widget) {
+    if (cellDirection == CellDirection.leftToRight) {
+      rowWidgets.add(widget);
+    } else {
+      rowWidgets.insert(0, widget);
+    }
   }
 }
 
@@ -177,10 +206,13 @@ class CellLayoutBuilder {
 class LayoutDimensions {
   late int nrOfColumns;
   late double columnWidth;
+
   /// the space between columns as [MaterialMeasurement]
   late double columnGutterWidth;
+
   /// the space between rows as [MaterialMeasurement]
   late double rowGutterHeight;
+
   /// the space left and right of the columns as [MaterialMeasurement]
   late double marginWidth;
 
@@ -189,8 +221,8 @@ class LayoutDimensions {
     columnGutterWidth = responsiveLayout.columnGutterWidth;
     rowGutterHeight = responsiveLayout.rowGutterHeight;
     nrOfColumns = _calculateNrOfColumns(responsiveLayout, availableWidth);
-    marginWidth= _calculateMargin(responsiveLayout, availableWidth);
-    columnWidth = _calculateColumnsWidth(availableWidth-2*marginWidth);
+    marginWidth = _calculateMargin(responsiveLayout, availableWidth);
+    columnWidth = _calculateColumnsWidth(availableWidth - 2 * marginWidth);
   }
 
   int _calculateNrOfColumns(
@@ -214,23 +246,25 @@ class LayoutDimensions {
     return (availableWidth - totalColumnGuttersWidth) / nrOfColumns;
   }
 
-  double _calculateMargin(ResponsiveLayoutGrid responsiveLayout, double availableWidth) {
-    if (responsiveLayout.maxNumberOfColumns==null) {
+  double _calculateMargin(
+      ResponsiveLayoutGrid responsiveLayout, double availableWidth) {
+    if (responsiveLayout.maxNumberOfColumns == null) {
       return 0;
     }
-    if (nrOfColumns<responsiveLayout.maxNumberOfColumns!) {
+    if (nrOfColumns < responsiveLayout.maxNumberOfColumns!) {
       return 0;
     }
-    var maxWidth=(nrOfColumns+1)*responsiveLayout.minimumColumnWidth+ nrOfColumns*responsiveLayout.columnGutterWidth;
-    if (availableWidth<maxWidth) {
+    var maxWidth = (nrOfColumns + 1) * responsiveLayout.minimumColumnWidth +
+        nrOfColumns * responsiveLayout.columnGutterWidth;
+    if (availableWidth < maxWidth) {
       return 0;
     } else {
-      return (availableWidth-maxWidth)/2;
+      return (availableWidth - maxWidth) / 2;
     }
   }
 }
 
-enum CellPosition { nextColumn, nextRow }
+enum CellPosition { nextColumn, nextRowLeftToRight, nextRowRightToLeft }
 
 class ResponsiveLayoutCell extends StatelessWidget {
   final CellPosition position;
@@ -247,29 +281,6 @@ class ResponsiveLayoutCell extends StatelessWidget {
   @override
   Widget build(BuildContext context) => child;
 }
-
-//
-// // A wrapper for a child inside its parent ((ResponsiveLayoutGrid) in order to provide extra layout information
-// ResponsiveLayoutChild
-// topLeft: nextRow/ nextColumn    (nextColumn byDefault)
-// columnSpan: ColumnSpan.max(n), ColumnSpan.auto(), ColumnSpan.remainingWidth()  (auto by default, auto=minimum space of child)
-// child:
-//
-// // A ResponsiveLayoutChild that creates a child uses the column information from its parent (ResponsiveLayoutGrid)
-// ResponsiveLayoutChildFactory extends ResponsiveLayoutChild
-// topLeft: nextRow/ nextColumn    (nextColumn byDefault)
-// columnSpan: ColumnSpan.max(n), ColumnSpan.auto(), ColumnSpan.remainingWidth()  (auto by default, auto=minimum space of child)
-// builder: Widget Function(ResponsiveLayoutChildContext context)
-//
-//
-// See:
-// https://m3.material.io/foundations/adaptive-design/large-screens
-// https://material.io/design/layout/responsive-layout-grid.html
-// https://material.io/design/layout/responsive-layout-grid.html#breakpoints
-//
-// https://pub.dev/packages/responsive_grid
-// https://medium.com/flutter-community/build-your-responsive-flutter-layout-like-a-pro-6bf86aaed81e
-//
 
 class ColumnSpan {
   /// a constant value to indicate that the [max] is calculated based on the
@@ -306,7 +317,9 @@ class ColumnSpan {
     validateMinMax();
   }
 
-  const ColumnSpan.size(int columns): min=columns, max=columns;
+  const ColumnSpan.size(int columns)
+      : min = columns,
+        max = columns;
 
   /// The [ColumnSpan] is calculated based on the minimum width of
   /// the [ResponsiveLayoutCell]
@@ -346,8 +359,6 @@ class ColumnSpan {
       return max!;
     }
   }
-
-
 }
 
 /// Distances in flutter are in

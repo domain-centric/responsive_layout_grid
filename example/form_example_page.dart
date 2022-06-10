@@ -11,16 +11,16 @@ class FormExamplePage extends StatelessWidget {
       ),
       body: SingleChildScrollView(
         child: Container(
-          color:Colors.grey[300],
+          color: Colors.grey[300],
           child: Padding(
               padding: const EdgeInsets.all(8),
               child: ResponsiveLayoutGrid(
-                maxNumberOfColumns: 12,
+                maxNumberOfColumns: 8,
                 cells: [
                   createGroupBar('Participant'),
                   createTextField(
                     label: 'Given name',
-                    position: CellPosition.nextRow,
+                    position: CellPosition.nextRowLeftToRight,
                   ),
                   createTextField(
                     label: 'Family name',
@@ -32,13 +32,13 @@ class FormExamplePage extends StatelessWidget {
                   ),
                   createTextField(
                       label: 'Remarks (e.g. medicines and allergies)',
-                      position: CellPosition.nextRow,
+                      position: CellPosition.nextRowLeftToRight,
                       columnSpan: const ColumnSpan.size(3),
                       maxLines: 5),
                   createGroupBar('Home Address'),
                   createTextField(
                       label: 'Street',
-                      position: CellPosition.nextRow,
+                      position: CellPosition.nextRowLeftToRight,
                       maxLines: 2),
                   createTextField(
                     label: 'City',
@@ -58,35 +58,64 @@ class FormExamplePage extends StatelessWidget {
                   ),
                   createGroupBar('Consent'),
                   createTextField(
-                    label: 'Name of parent or guardian',
+                    label: 'Given name of parent or guardian',
+                    position: CellPosition.nextRowLeftToRight,
+                  ),
+                  createTextField(
+                    label: 'Family name of parent or guardian',
                     position: CellPosition.nextColumn,
                   ),
                   createTextField(
                     label: 'Phone number of parent or guardian',
-                    position: CellPosition.nextRow,
+                    position: CellPosition.nextRowLeftToRight,
                   ),
                   createTextField(
                     label: 'Second phone number in case of emergency',
                     position: CellPosition.nextColumn,
                   ),
-                  createSubmitButton(),
+                  buttonGutter(),
+                  createSubmitButton(context, CellPosition.nextRowRightToLeft),
+                  createCancelButton(context, CellPosition.nextColumn),
                 ],
               )),
         ),
       ));
 
-  ResponsiveLayoutCell createSubmitButton() {
+  ResponsiveLayoutCell buttonGutter() => const ResponsiveLayoutCell(
+        position: CellPosition.nextRowLeftToRight,
+        child: SizedBox(
+          height: 8,
+        ),
+      );
+
+  ResponsiveLayoutCell createSubmitButton(
+      BuildContext context, CellPosition position) {
     return ResponsiveLayoutCell(
-        position: CellPosition.nextRow,
+        position: position,
         child: ElevatedButton(
-          onPressed: () {},
+          onPressed: () {
+            Navigator.pop(context);
+          },
           child:
               const Padding(padding: EdgeInsets.all(16), child: Text('Submit')),
         ));
   }
 
+  ResponsiveLayoutCell createCancelButton(
+      BuildContext context, CellPosition position) {
+    return ResponsiveLayoutCell(
+        position: position,
+        child: OutlinedButton(
+          onPressed: () {
+            Navigator.pop(context);
+          },
+          child:
+              const Padding(padding: EdgeInsets.all(16), child: Text('Cancel')),
+        ));
+  }
+
   ResponsiveLayoutCell createGroupBar(String title) => ResponsiveLayoutCell(
-        position: CellPosition.nextRow,
+        position: CellPosition.nextRowLeftToRight,
         columnSpan: ColumnSpan.remainingWidth(),
         child: Container(
           padding: const EdgeInsets.all(8),
@@ -97,11 +126,11 @@ class FormExamplePage extends StatelessWidget {
       );
 
   ResponsiveLayoutCell createGroupBar2(String title) => ResponsiveLayoutCell(
-    position: CellPosition.nextRow,
-    columnSpan: ColumnSpan.remainingWidth(),
-    child:  Text(title,
-          style: const TextStyle(color: Colors.blue, fontSize: 18)),
-  );
+        position: CellPosition.nextRowLeftToRight,
+        columnSpan: ColumnSpan.remainingWidth(),
+        child: Text(title,
+            style: const TextStyle(color: Colors.blue, fontSize: 18)),
+      );
 
   ResponsiveLayoutCell createTextField({
     required String label,
@@ -116,17 +145,17 @@ class FormExamplePage extends StatelessWidget {
           Align(alignment: Alignment.topLeft, child: Text(label)),
           TextFormField(
             maxLines: maxLines,
-            decoration:  const InputDecoration(
-            filled: true,
-            fillColor: Colors.white,
-            isDense: true,
-            border: OutlineInputBorder(
-                borderSide: BorderSide(color: Colors.transparent, width: 0)),
-            enabledBorder: OutlineInputBorder(
-                borderSide: BorderSide(color: Colors.transparent, width: 0)),
-            disabledBorder: OutlineInputBorder(
-                borderSide: BorderSide(color: Colors.transparent, width: 0)),
-          ),
+            decoration: const InputDecoration(
+              filled: true,
+              fillColor: Colors.white,
+              isDense: true,
+              border: OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.transparent, width: 0)),
+              enabledBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.transparent, width: 0)),
+              disabledBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.transparent, width: 0)),
+            ),
           ),
         ]),
       );
