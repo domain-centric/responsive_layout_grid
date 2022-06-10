@@ -31,15 +31,15 @@ class ResponsiveLayoutGrid extends StatefulWidget {
 
   ResponsiveLayoutGrid(
       {Key? key,
-      this.minimumColumnWidth = defaultColumnWidth,
-      this.columnGutterWidth = defaultGutter,
-      this.rowGutterHeight = defaultGutter,
-      this.maxNumberOfColumns,
+        this.minimumColumnWidth = defaultColumnWidth,
+        this.columnGutterWidth = defaultGutter,
+        this.rowGutterHeight = defaultGutter,
+        this.maxNumberOfColumns,
 
-      /// The [cells] (children) are the widgets that are displayed by this [ResponsiveLayout].
-      /// [cells] are often [Widgets] that are wrapped in a [ResponsiveLayoutCell]
-      /// [cells] that are not wrapped will automatically be wrapped in a [ResponsiveLayoutCell] later
-      required List<Widget> cells})
+        /// The [cells] (children) are the widgets that are displayed by this [ResponsiveLayout].
+        /// [cells] are often [Widgets] that are wrapped in a [ResponsiveLayoutCell]
+        /// [cells] that are not wrapped will automatically be wrapped in a [ResponsiveLayoutCell] later
+        required List<Widget> cells})
       : cellBuilder = _createDefaultCellBuilder(cells),
         super(key: key);
 
@@ -57,7 +57,7 @@ class ResponsiveLayoutGrid extends StatefulWidget {
   State<StatefulWidget> createState() => _ResponsiveLayoutGrid();
 
   static List<Widget> Function(LayoutDimensions layoutDimensions)
-      _createDefaultCellBuilder(List<Widget> cells) =>
+  _createDefaultCellBuilder(List<Widget> cells) =>
           (layoutDimensions) => cells;
 }
 
@@ -66,28 +66,28 @@ class _ResponsiveLayoutGrid extends State<ResponsiveLayoutGrid> {
   Widget build(BuildContext context) {
     return LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
-      LayoutDimensions layoutDimensions =
+          LayoutDimensions layoutDimensions =
           LayoutDimensions(widget, constraints.maxWidth);
 
-      var cellLayoutBuilder = CellLayoutBuilder(layoutDimensions);
-      for (ResponsiveLayoutCell cell in cells(layoutDimensions)) {
-        if (cell.position == CellPosition.nextRowLeftToRight ||
-            cell.position == CellPosition.nextRowRightToLeft ||
-            !cellLayoutBuilder.cellFitsInCurrentRow(cell)) {
-          cellLayoutBuilder.goToNextRow(cell.position);
-        }
-        cellLayoutBuilder.addCell(cell);
-      }
-      return cellLayoutBuilder.build();
-    });
+          var cellLayoutBuilder = CellLayoutBuilder(layoutDimensions);
+          for (ResponsiveLayoutCell cell in cells(layoutDimensions)) {
+            if (cell.position == CellPosition.nextRowLeftToRight ||
+                cell.position == CellPosition.nextRowRightToLeft ||
+                !cellLayoutBuilder.cellFitsInCurrentRow(cell)) {
+              cellLayoutBuilder.goToNextRow(cell.position);
+            }
+            cellLayoutBuilder.addCell(cell);
+          }
+          return cellLayoutBuilder.build();
+        });
   }
 
   List<ResponsiveLayoutCell> cells(LayoutDimensions layoutDimensions) {
     var widgets = widget.cellBuilder(layoutDimensions);
     var responsiveLayoutCells = widgets
         .map((widget) => widget is ResponsiveLayoutCell
-            ? widget
-            : ResponsiveLayoutCell(child: widget))
+        ? widget
+        : ResponsiveLayoutCell(child: widget))
         .toList();
     return responsiveLayoutCells;
   }
@@ -142,7 +142,7 @@ class CellLayoutBuilder {
         if (cellDirection == CellDirection.rightToLeft)
           SizedBox(
               width: (layoutDimensions.nrOfColumns - columnNr) *
-                      layoutDimensions.columnWidth +
+                  layoutDimensions.columnWidth +
                   (layoutDimensions.nrOfColumns - columnNr) *
                       layoutDimensions.columnGutterWidth),
         ...rowWidgets,
@@ -231,7 +231,7 @@ class LayoutDimensions {
       return 0;
     } else {
       var calculatedNrOfColumns = ((availableWidth + columnGutterWidth) /
-              (responsiveLayout.minimumColumnWidth + columnGutterWidth))
+          (responsiveLayout.minimumColumnWidth + columnGutterWidth))
           .truncate();
       if (responsiveLayout.maxNumberOfColumns != null &&
           calculatedNrOfColumns > responsiveLayout.maxNumberOfColumns!) {
@@ -371,6 +371,4 @@ class ColumnSpan {
 /// rhythm across each screen.
 ///
 /// Smaller elements, such as icons, can align to a 4dp grid, while typography
-/// can fall on a 4dp baseline grid. This allows each line’s typographic
-/// baseline to be spaced in increments of 4dp from a neighbor.
-class MaterialMeasurement {}
+/// can fall on a 4dp baseline grid. This allows each line’s typographi

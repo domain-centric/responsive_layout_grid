@@ -1,23 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:responsive_layout_grid/responsive_layout_grid.dart';
 
-class ColumnExamplePage extends StatelessWidget {
-  const ColumnExamplePage({Key? key}) : super(key: key);
+class ColumnLayoutExamplePage extends StatelessWidget {
+  const ColumnLayoutExamplePage({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-      appBar: AppBar(
-        title: const Text('Column Example (resize me!)'),
-      ),
-      body: Container(
-          color: Colors.yellow,
-          padding: const EdgeInsets.all(8),
-          child: Container(
-              color: Colors.grey,
-              child: ResponsiveLayoutGrid.builder(
-                cellBuilder: _cellBuilder,
-                maxNumberOfColumns: 6,
-              ))));
+  Widget build(BuildContext context) =>
+      Scaffold(
+          appBar: AppBar(
+            title: const Text('Column Example (resize me!)'),
+          ),
+          body: Container(
+              color: Colors.yellow,
+              padding: const EdgeInsets.all(8),
+              child: Container(
+                  color: Colors.grey,
+                  child: ResponsiveLayoutGrid.builder(
+                    cellBuilder: _cellBuilder,
+                    maxNumberOfColumns: 6,
+                  ))));
 
   List<Widget> _cellBuilder(LayoutDimensions columnInfo) {
     List<Widget> children = [];

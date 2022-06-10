@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:responsive_layout_grid/responsive_layout_grid.dart';
 
-class FormExamplePage extends StatelessWidget {
-  const FormExamplePage({Key? key}) : super(key: key);
+class FormLayoutExamplePage extends StatelessWidget {
+  const FormLayoutExamplePage({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) => Scaffold(
