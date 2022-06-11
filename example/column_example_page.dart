@@ -16,20 +16,26 @@ class ColumnLayoutExamplePage extends StatelessWidget {
               child: Container(
                   color: Colors.grey,
                   child: ResponsiveLayoutGrid.builder(
-                    cellBuilder: _cellBuilder,
+                    cellFactory: MyCellFactory(),
                     maxNumberOfColumns: 6,
                   ))));
 
-  List<Widget> _cellBuilder(LayoutDimensions columnInfo) {
-    List<Widget> children = [];
-    for (int i = 0; i < columnInfo.nrOfColumns; i++) {
-      children.add(Container(
+
+}
+
+class MyCellFactory extends ResponsiveLayoutCellFactory {
+  @override
+  List<Widget> create(LayoutDimensions layoutDimensions) {
+    List<Widget> cells = [];
+    for (int i = 0; i < layoutDimensions.nrOfColumns; i++) {
+      cells.add(Container(
         color: Colors.white,
         child: Center(
           child: Text("Column ${i + 1}"),
         ),
       ));
     }
-    return children;
+    return cells;
   }
+
 }
