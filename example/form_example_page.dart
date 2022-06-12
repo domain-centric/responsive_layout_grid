@@ -13,7 +13,6 @@ class FormLayoutExamplePage extends StatelessWidget {
         ),
         body: SingleChildScrollView(
           child: Container(
-              color: Colors.grey[300],
               padding: const EdgeInsets.all(8),
               child: Column(
                 children: const [
@@ -101,7 +100,9 @@ class ResponsiveFieldGrid extends StatelessWidget {
         ),
       );
 
-  ResponsiveLayoutCell createTextField({
+  /// TODO remove later
+  /// Used with gray background
+  ResponsiveLayoutCell createTextFieldNilsStyle({
     required String label,
     required CellPosition position,
     ColumnSpan columnSpan = const ColumnSpan.size(2),
@@ -128,6 +129,26 @@ class ResponsiveFieldGrid extends StatelessWidget {
           ),
         ]),
       );
+
+
+  ResponsiveLayoutCell createTextField({
+    required String label,
+    required CellPosition position,
+    ColumnSpan columnSpan = const ColumnSpan.size(2),
+    int maxLines = 1,
+  }) =>
+      ResponsiveLayoutCell(
+        position: position,
+        columnSpan: columnSpan,
+        child: TextFormField(
+            maxLines: maxLines,
+            decoration:  InputDecoration(
+              label: Text(label),
+              filled: true,
+              border: const OutlineInputBorder()
+            ),
+          ),
+        );
 }
 
 class ResponsiveButtonGrid extends StatelessWidget {
