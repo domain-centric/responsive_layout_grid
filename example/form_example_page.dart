@@ -16,6 +16,8 @@ class FormLayoutExamplePage extends StatelessWidget {
               padding: const EdgeInsets.all(8),
               child: ResponsiveLayoutGrid(
                 maxNumberOfColumns: 8,
+                layoutFactory: const DefaultLayoutFactory(
+                    cellDirection: CellDirection.leftToRight),
                 cells: [
                   createGroupBar('Participant'),
                   createTextField(

@@ -140,13 +140,10 @@ enum CellAlignment {
 }
 
 class DefaultLayoutFactory implements ResponsiveLayoutFactory {
-  const DefaultLayoutFactory();
 
-  /// TODO final field: ColumnSpanPreference columnSpanPreference
-  /// TODO final field: CellAlignment cellAlignment
-  /// TODO final field: CellDirection cellDirection
+  final CellDirection cellDirection ;
 
-  final CellDirection cellDirection = CellDirection.leftToRight;
+  const DefaultLayoutFactory({this.cellDirection=CellDirection.leftToRight});
 
   @override
   Layout create(
@@ -160,11 +157,11 @@ class DefaultLayoutFactory implements ResponsiveLayoutFactory {
       if (_startOnNewRow(cell,  layout.availableColumns(row))) {
         row = layout.nextRow;
         column =
-            cellDirection == CellDirection.leftToRight ? 0 : numberOfColumns;
+            cellDirection == CellDirection.leftToRight ? 0 : numberOfColumns;// TODO this depends on alignment not cellDirection
       }
 
       var columnSpan = cell.columnSpan.spanFor(layout.availableColumns(row));
-      var leftColumn = cellDirection == CellDirection.leftToRight
+      var leftColumn = cellDirection == CellDirection.leftToRight// TODO this depends on alignment not cellDirection
           ? column
           : column - columnSpan + 1;
       layout.addCell(
@@ -174,7 +171,7 @@ class DefaultLayoutFactory implements ResponsiveLayoutFactory {
         cell: cell,
       );
 
-      if (cellDirection == CellDirection.leftToRight) {
+      if (cellDirection == CellDirection.leftToRight) {// TODO this depends on alignment not cellDirection
         column += columnSpan;
       } else {
         column = leftColumn - 1;
@@ -255,7 +252,7 @@ class LayoutRow {
       widgets.add(_createMargin(marginWidth));
     }
 
-    return Row(children: widgets);
+    return Row( children: widgets);
   }
 
   Widget _createMargin(double width) => SizedBox(width: width);
@@ -371,7 +368,7 @@ class Layout {
       return numberOfColumns;
     }
     if (cellDirection == CellDirection.leftToRight) {
-      return numberOfColumns - cellsInRow.last.rightColumn-1;
+      return numberOfColumns - cellsInRow.last.rightColumn;
     } else {
       return cellsInRow.first.leftColumn;
     }
@@ -524,8 +521,7 @@ class ColumnSpan {
   }
 
   bool fitsFor(int availableColumns) {
-    print("!!! $min $availableColumns");
-    return min <= availableColumns;
+    return min < availableColumns;
   }
 
   /// returns the number of columns based on the remaining number of columns
