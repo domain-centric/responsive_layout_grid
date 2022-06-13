@@ -87,7 +87,7 @@ class _ResponsiveLayoutGrid extends State<ResponsiveLayoutGrid> {
 }
 
 /// A [ResponsiveLayoutCellFactory] creates [Widget]s that represent the cells.
-/// The function can use information of the size and position of the [Column]s
+/// The [create] method can use information of the size and position of the [Column]s
 ///
 /// The [cells] are the [Widgets] that are displayed by this [ResponsiveLayoutGrid].
 /// [cells] are often [Widgets] that are wrapped in a [ResponsiveLayoutCell]
@@ -139,26 +139,30 @@ enum CellAlignment {
 }
 
 class DefaultLayoutFactory implements ResponsiveLayoutFactory {
-  final CellAlignment cellAlignment;
-
-  const DefaultLayoutFactory({
-    this.cellAlignment = CellAlignment.left,
-  });
+  const DefaultLayoutFactory();
 
   @override
   Layout create(
     int numberOfColumns,
     List<ResponsiveLayoutCell> cells,
   ) {
+    var cellAlignment = CellAlignment.left;
     var layout = Layout(numberOfColumns);
     var row = Layout.firstRow;
     var column = Layout.firstColumn;
     for (var cell in cells) {
       if (_startOnNewRow(cell, layout.availableColumns(row, cellAlignment))) {
-        _addAlignmentCellIfNeeded(layout: layout, row: row, column: column);
+        _addAlignmentCellIfNeeded(
+            layout: layout,
+            row: row,
+            column: column,
+            cellAlignment: cellAlignment);
 
+        if (cell.position.type == CellPositionType.nextRow) {
+          cellAlignment = cell.position.newRowAlignment!;
+        }
         row = layout.nextRow;
-        column = _nextRowColumnNumber(numberOfColumns);
+        column = _nextRowColumnNumber(cellAlignment, numberOfColumns);
       }
 
       var columnSpan =
@@ -179,12 +183,17 @@ class DefaultLayoutFactory implements ResponsiveLayoutFactory {
         column += columnSpan;
       }
     }
-    _addAlignmentCellIfNeeded(layout: layout, row: row, column: column);
+    _addAlignmentCellIfNeeded(
+      layout: layout,
+      row: row,
+      column: column,
+      cellAlignment: cellAlignment,
+    );
 
     return layout;
   }
 
-  int _nextRowColumnNumber(int numberOfColumns) {
+  int _nextRowColumnNumber(CellAlignment cellAlignment, int numberOfColumns) {
     return cellAlignment == CellAlignment.right
         ? numberOfColumns
         : Layout.firstColumn;
@@ -194,7 +203,7 @@ class DefaultLayoutFactory implements ResponsiveLayoutFactory {
     ResponsiveLayoutCell cell,
     int availableColumns,
   ) =>
-      cell.position == CellPosition.nextRow ||
+      cell.position.type == CellPositionType.nextRow ||
       !cell.columnSpan.fitsFor(availableColumns);
 
   ///TODO remove when ResponsiveLayoutGrid uses CustomMultiChildLayout with MultiChildLayoutDelegate
@@ -202,10 +211,11 @@ class DefaultLayoutFactory implements ResponsiveLayoutFactory {
     required Layout layout,
     required int row,
     required int column,
+    required CellAlignment cellAlignment,
   }) {
     if (cellAlignment == CellAlignment.right) {
       var availableColumns = layout.availableColumns(row, cellAlignment);
-      if (availableColumns > 0 && availableColumns<layout.numberOfColumns) {
+      if (availableColumns > 0 && availableColumns < layout.numberOfColumns) {
         layout.addCell(
             leftColumn: Layout.firstColumn,
             columnSpan: availableColumns,
@@ -501,7 +511,37 @@ class LayoutDimensions {
   }
 }
 
-enum CellPosition { nextColumn, nextRow }
+enum CellPositionType { nextColumn, nextRow }
+
+class CellPosition {
+  final CellPositionType type;
+
+  /// Only has a value for the next Row
+  final CellAlignment? newRowAlignment;
+
+  /// The cell is to be positioned on the next available column.
+  /// This could be on the next row if there aren't enough empty columns
+  /// on the current row.
+  const CellPosition.nextColumn()
+      : type = CellPositionType.nextColumn,
+        newRowAlignment = null;
+
+  /// The cell is to be positioned on a new row at the bottom.
+  /// [newRowAlignment] sets the alignment for this new row.
+  const CellPosition.nextRow([this.newRowAlignment = CellAlignment.left])
+      : type = CellPositionType.nextRow;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is CellPosition &&
+          runtimeType == other.runtimeType &&
+          type == other.type &&
+          newRowAlignment == other.newRowAlignment;
+
+  @override
+  int get hashCode => type.hashCode ^ newRowAlignment.hashCode;
+}
 
 class ResponsiveLayoutCell extends StatelessWidget {
   final CellPosition position;
@@ -510,7 +550,7 @@ class ResponsiveLayoutCell extends StatelessWidget {
 
   const ResponsiveLayoutCell({
     Key? key,
-    this.position = CellPosition.nextColumn,
+    this.position = const CellPosition.nextColumn(),
     this.columnSpan = const ColumnSpan.auto(),
     required this.child,
   }) : super(key: key);
