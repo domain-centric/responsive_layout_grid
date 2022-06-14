@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:responsive_layout_grid/responsive_layout_grid.dart';
 
+import 'scroll_view_with_scroll_bar.dart';
+
 const maxNumberOfColumns = 8;
 
 class FormLayoutExamplePage extends StatelessWidget {
@@ -11,7 +13,7 @@ class FormLayoutExamplePage extends StatelessWidget {
         appBar: AppBar(
           title: const Text('Sport Camp Registration Form (resize me!)'),
         ),
-        body: const SingleChildScrollView(
+        body: const ScrollViewWithScrollBar(
           child:
               Padding(padding: EdgeInsets.all(8), child: ResponsiveFormGrid()),
         ),

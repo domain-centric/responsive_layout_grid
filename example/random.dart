@@ -26,17 +26,22 @@ int randomInt({int min = 0, int max = _maxRandomInt}) {
 
 /// Generates a [List] of a random size between and including [minSize] and [maxSize]
 /// The [generator] parameter is a function to generate the values in the list.
-List randomList(dynamic Function() generator,
+List<T> randomList<T>(T Function() generator,
     {int minSize = 0, int maxSize = _maxRandomInt}) {
   _validateMinSmallerOrEqualToMax(min: minSize, max: maxSize);
   _validateParameterGreaterOrEqualToZero(name: 'minLength', value: minSize);
-  List results = [];
+  List<T> results = [];
   var length = randomInt(min: minSize, max: maxSize);
   for (int i = 0; i < length; i++) {
     results.add(generator());
   }
   return results;
 }
+
+/// Returns a random item from a list.
+/// Returns null when the list is empty
+T? randomListItem<T>(List<T> list) =>
+    list.isEmpty ? null : list[randomInt(max: list.length - 1)];
 
 /// A list of [Lorem Ipsum](https://en.wikipedia.org/wiki/Lorem_ipsum) words
 const List<String> randomLoremIpsumWords = [
@@ -1229,10 +1234,7 @@ const List<String> randomLoremIpsumWords = [
 ];
 
 /// Generates a random Lorem Ipsum word
-String randomLoremIpsumWord() => randomLoremIpsumWords[randomInt(
-      min: 0,
-      max: randomLoremIpsumWords.length - 1,
-    )];
+String randomLoremIpsumWord() => randomListItem(randomLoremIpsumWords)!;
 
 /// Generates a [String] of Lorem Ipsum words
 String randomLoremIpsumString({

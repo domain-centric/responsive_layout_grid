@@ -24,7 +24,7 @@ class ResponsiveLayoutGrid extends StatefulWidget {
   /// The [cells] (children) are the widgets that are displayed by this [ResponsiveLayoutGrid].
   /// [cells] are often [Widgets] that are wrapped in a [ResponsiveLayoutCell]
   /// [cells] that are not wrapped will automatically be wrapped in a [ResponsiveLayoutCell] later
-  late ResponsiveLayoutCellFactory cellFactory;
+  final ResponsiveLayoutCellFactory cellFactory;
   final ResponsiveLayoutFactory layoutFactory;
 
   static const double defaultGutter = 16;
@@ -99,7 +99,7 @@ abstract class ResponsiveLayoutCellFactory {
 class DefaultCellFactory implements ResponsiveLayoutCellFactory {
   final List<Widget> cells;
 
-  DefaultCellFactory(this.cells);
+  const DefaultCellFactory(this.cells);
 
   @override
   List<Widget> create(LayoutDimensions layoutDimensions) => cells;

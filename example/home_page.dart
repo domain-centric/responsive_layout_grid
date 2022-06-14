@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher_string.dart';
 import 'column_example_page.dart';
 import 'form_example_page.dart';
 import 'news_example_page.dart';
+import 'scroll_view_with_scroll_bar.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -21,7 +22,7 @@ class ButtonGrid extends StatelessWidget {
   const ButtonGrid({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) => SingleChildScrollView(
+  Widget build(BuildContext context) => ScrollViewWithScrollBar(
         child: Padding(
           padding: const EdgeInsets.all(32),
           child: ResponsiveLayoutGrid(maxNumberOfColumns: 4, cells: [
