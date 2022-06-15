@@ -18,13 +18,7 @@ class ResponsiveLayoutGrid extends StatefulWidget {
   /// null=unlimited
   final int? maxNumberOfColumns;
 
-  /// A [cellFactory] is a function that creates [Widget]s that represent the cells.
-  /// The function can use information of the size and position of the [Column]s
-  ///
-  /// The [cells] (children) are the widgets that are displayed by this [ResponsiveLayoutGrid].
-  /// [cells] are often [Widgets] that are wrapped in a [ResponsiveLayoutCell]
-  /// [cells] that are not wrapped will automatically be wrapped in a [ResponsiveLayoutCell] later
-  final ResponsiveLayoutFactory layoutFactory;
+ final ResponsiveLayoutFactory layoutFactory;
   final List<Widget> children;
 
   static const double defaultGutter = 16;
@@ -60,6 +54,13 @@ class _ResponsiveLayoutGrid extends State<ResponsiveLayoutGrid> {
   }
 }
 
+/// The [ResponsiveLayoutFactory] is responsible for creating a [Layout]
+/// It orders the [children] into a Layout with a given number of columns
+///
+/// You could create your own [ResponsiveLayoutFactory] if you need to
+/// do something outside the box.
+///
+/// See also: [DefaultLayoutFactory]
 abstract class ResponsiveLayoutFactory {
   Layout create(
     int numberOfColumns,

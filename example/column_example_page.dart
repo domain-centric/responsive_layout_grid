@@ -23,6 +23,8 @@ class ColumnLayoutExamplePage extends StatelessWidget {
 
 }
 
+/// A custom [ResponsiveLayoutFactory] to create the exact number of
+/// [LayoutCell]s as number of columns
 class MyLayoutFactory extends ResponsiveLayoutFactory {
   @override
   Layout create(int numberOfColumns, List<Widget> children) {
