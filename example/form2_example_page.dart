@@ -1,19 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:responsive_layout_grid/responsive_layout_grid.dart';
 
+import 'scroll_view_with_scroll_bar.dart';
+
 const maxNumberOfColumns = 8;
 
-class FormLayoutExamplePage extends StatelessWidget {
-  const FormLayoutExamplePage({Key? key}) : super(key: key);
+class Form2LayoutExamplePage extends StatelessWidget {
+  const Form2LayoutExamplePage({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) => Scaffold(
         appBar: AppBar(
           title: const Text('Sport Camp Registration Form (resize me!)'),
         ),
-        body: const SingleChildScrollView(
-          child:
-              Padding(padding: EdgeInsets.all(8), child: ResponsiveFormGrid()),
+        body: ScrollViewWithScrollBar(
+          child: Container(
+            color: Colors.grey[300],
+            padding: const EdgeInsets.all(8),
+            child: const ResponsiveFormGrid(),
+          ),
         ),
       );
 }
@@ -99,9 +104,7 @@ class ResponsiveFormGrid extends StatelessWidget {
         ),
       );
 
-  /// TODO remove later
-  /// Used with gray background
-  ResponsiveLayoutCell createTextFieldNilsStyle({
+  ResponsiveLayoutCell _createTextField({
     required String label,
     required CellPosition position,
     ColumnSpan columnSpan = const ColumnSpan.size(2),
@@ -127,24 +130,6 @@ class ResponsiveFormGrid extends StatelessWidget {
             ),
           ),
         ]),
-      );
-
-  ResponsiveLayoutCell _createTextField({
-    required String label,
-    required CellPosition position,
-    ColumnSpan columnSpan = const ColumnSpan.size(2),
-    int maxLines = 1,
-  }) =>
-      ResponsiveLayoutCell(
-        position: position,
-        columnSpan: columnSpan,
-        child: TextFormField(
-          maxLines: maxLines,
-          decoration: InputDecoration(
-              label: Text(label),
-              filled: true,
-              border: const OutlineInputBorder()),
-        ),
       );
 
   ResponsiveLayoutCell _createSubmitButton(
