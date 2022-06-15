@@ -11,7 +11,7 @@ class NewsLayoutExamplePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Scaffold(
       appBar: AppBar(
-        title: const Text('Sport Camp Registration Form (resize me!)'),
+        title: const Text('News Paper Layout (resize me!)'),
       ),
       body: ScrollViewWithScrollBar(
         child: Padding(
@@ -20,7 +20,7 @@ class NewsLayoutExamplePage extends StatelessWidget {
               maxNumberOfColumns: 8,
               columnGutterWidth: gutterSize,
               rowGutterHeight: gutterSize,
-              cells: [
+              children: [
                 ResponsiveLayoutCell(
                     columnSpan: ColumnSpan.remainingWidth(),
                     child: Center(

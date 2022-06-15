@@ -26,7 +26,7 @@ class ResponsiveHomeGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) =>
-      ResponsiveLayoutGrid(maxNumberOfColumns: 4, cells: [
+      ResponsiveLayoutGrid(maxNumberOfColumns: 4, children: [
         _createGroupBar("Examples"),
         _createButton(
           title: 'Columns Layout',

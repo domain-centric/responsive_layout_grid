@@ -29,7 +29,7 @@ class ResponsiveFormGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) => ResponsiveLayoutGrid(
         maxNumberOfColumns: maxNumberOfColumns,
-        cells: [
+        children: [
           _createGroupBar('Participant'),
           _createTextField(
             label: 'Given name',

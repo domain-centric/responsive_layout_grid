@@ -24,38 +24,22 @@ class ResponsiveLayoutGrid extends StatefulWidget {
   /// The [cells] (children) are the widgets that are displayed by this [ResponsiveLayoutGrid].
   /// [cells] are often [Widgets] that are wrapped in a [ResponsiveLayoutCell]
   /// [cells] that are not wrapped will automatically be wrapped in a [ResponsiveLayoutCell] later
-  final ResponsiveLayoutCellFactory cellFactory;
   final ResponsiveLayoutFactory layoutFactory;
+  final List<Widget> children;
 
   static const double defaultGutter = 16;
   static const double defaultColumnWidth = 160;
   static const DefaultLayoutFactory defaultLayoutFactory =
       DefaultLayoutFactory();
 
-  ResponsiveLayoutGrid({
+  const ResponsiveLayoutGrid({
     Key? key,
     this.minimumColumnWidth = defaultColumnWidth,
     this.columnGutterWidth = defaultGutter,
     this.rowGutterHeight = defaultGutter,
     this.maxNumberOfColumns,
-
-    /// The [cells] (children) are the widgets that are displayed by this [ResponsiveLayout].
-    /// [cells] are often [Widgets] that are wrapped in a [ResponsiveLayoutCell]
-    /// [cells] that are not wrapped will automatically be wrapped in a [ResponsiveLayoutCell] later
-    required List<Widget> cells,
+    this.children = const [],
     this.layoutFactory = defaultLayoutFactory,
-  })  : cellFactory = DefaultCellFactory(cells),
-        super(key: key);
-
-  /// Lets you build different layouts using a [cellFactory];
-  ResponsiveLayoutGrid.builder({
-    Key? key,
-    this.minimumColumnWidth = defaultColumnWidth,
-    this.columnGutterWidth = defaultGutter,
-    this.rowGutterHeight = defaultGutter,
-    this.maxNumberOfColumns,
-    this.layoutFactory = defaultLayoutFactory,
-    required this.cellFactory,
   }) : super(key: key);
 
   @override
@@ -70,45 +54,16 @@ class _ResponsiveLayoutGrid extends State<ResponsiveLayoutGrid> {
       var layoutDimensions = LayoutDimensions(widget, constraints.maxWidth);
       var nrOfColumns = layoutDimensions.nrOfColumns;
       var layoutFactory = widget.layoutFactory;
-      var layout = layoutFactory.create(nrOfColumns, cells(layoutDimensions));
+      var layout = layoutFactory.create(nrOfColumns, widget.children);
       return layout.asWidget(layoutDimensions);
     });
   }
-
-  List<ResponsiveLayoutCell> cells(LayoutDimensions layoutDimensions) {
-    var widgets = widget.cellFactory.create(layoutDimensions);
-    var responsiveLayoutCells = widgets
-        .map((widget) => widget is ResponsiveLayoutCell
-            ? widget
-            : ResponsiveLayoutCell(child: widget))
-        .toList();
-    return responsiveLayoutCells;
-  }
-}
-
-/// A [ResponsiveLayoutCellFactory] creates [Widget]s that represent the cells.
-/// The [create] method can use information of the size and position of the [Column]s
-///
-/// The [cells] are the [Widgets] that are displayed by this [ResponsiveLayoutGrid].
-/// [cells] are often [Widgets] that are wrapped in a [ResponsiveLayoutCell]
-/// [cells] that are not wrapped will automatically be wrapped in a [ResponsiveLayoutCell] later
-abstract class ResponsiveLayoutCellFactory {
-  List<Widget> create(LayoutDimensions layoutDimensions);
-}
-
-class DefaultCellFactory implements ResponsiveLayoutCellFactory {
-  final List<Widget> cells;
-
-  const DefaultCellFactory(this.cells);
-
-  @override
-  List<Widget> create(LayoutDimensions layoutDimensions) => cells;
 }
 
 abstract class ResponsiveLayoutFactory {
   Layout create(
     int numberOfColumns,
-    List<ResponsiveLayoutCell> responsiveLayoutCells,
+    List<Widget> children,
   );
 }
 
@@ -144,13 +99,13 @@ class DefaultLayoutFactory implements ResponsiveLayoutFactory {
   @override
   Layout create(
     int numberOfColumns,
-    List<ResponsiveLayoutCell> cells,
+    List<Widget> children,
   ) {
     var cellAlignment = CellAlignment.left;
     var layout = Layout(numberOfColumns);
     var row = Layout.firstRow;
     var column = Layout.firstColumn;
-    for (var cell in cells) {
+    for (var cell in _childrenToResponsiveLayoutCells(children)) {
       if (_startOnNewRow(cell, layout.availableColumns(row, cellAlignment))) {
         _addAlignmentCellIfNeeded(
             layout: layout,
@@ -224,6 +179,18 @@ class DefaultLayoutFactory implements ResponsiveLayoutFactory {
       }
     }
   }
+
+  /// Converts children by wrapping each child in a [ResponsiveLayoutCell]
+  /// if it is of another type.
+  List<ResponsiveLayoutCell> _childrenToResponsiveLayoutCells(
+      List<Widget> children) {
+    var responsiveLayoutCells = children
+        .map((widget) => widget is ResponsiveLayoutCell
+            ? widget
+            : ResponsiveLayoutCell(child: widget))
+        .toList();
+    return responsiveLayoutCells;
+  }
 }
 
 class LayoutCell {
@@ -243,7 +210,7 @@ class LayoutCell {
   final int columnSpan;
 
   /// Contains all information on how to display the cell
-  final ResponsiveLayoutCell cell;
+  final Widget cell;
 
   LayoutCell({
     required this.leftColumn,
@@ -258,7 +225,9 @@ class LayoutCell {
         (columnSpan - 1) * layoutDimensions.columnGutterWidth;
     return Container(
       constraints: BoxConstraints(minWidth: width, maxWidth: width),
-      child: cell.child,
+      child: cell is ResponsiveLayoutCell
+          ? (cell as ResponsiveLayoutCell).child
+          : cell,
     );
   }
 
@@ -322,7 +291,7 @@ class Layout {
     required int leftColumn,
     required int columnSpan,
     required int row,
-    required ResponsiveLayoutCell cell,
+    required Widget cell,
   }) {
     var layoutCell = LayoutCell(
         row: row, leftColumn: leftColumn, columnSpan: columnSpan, cell: cell);

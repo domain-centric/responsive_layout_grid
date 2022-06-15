@@ -15,27 +15,26 @@ class ColumnLayoutExamplePage extends StatelessWidget {
               padding: const EdgeInsets.all(8),
               child: Container(
                   color: Colors.grey,
-                  child: ResponsiveLayoutGrid.builder(
-                    cellFactory: MyCellFactory(),
+                  child: ResponsiveLayoutGrid(
+                    layoutFactory: MyLayoutFactory(),
                     maxNumberOfColumns: 6,
                   ))));
 
 
 }
 
-class MyCellFactory extends ResponsiveLayoutCellFactory {
+class MyLayoutFactory extends ResponsiveLayoutFactory {
   @override
-  List<Widget> create(LayoutDimensions layoutDimensions) {
-    List<Widget> cells = [];
-    for (int i = 0; i < layoutDimensions.nrOfColumns; i++) {
-      cells.add(Container(
+  Layout create(int numberOfColumns, List<Widget> children) {
+    var layout = Layout(numberOfColumns);
+    for (int i = 1; i <= numberOfColumns; i++) {
+      layout.addCell(leftColumn: i, columnSpan: 1, row: 1, cell: Container(
         color: Colors.white,
         child: Center(
-          child: Text("Column ${i + 1}"),
+          child: Text("Column $i"),
         ),
       ));
     }
-    return cells;
+    return layout;
   }
-
 }
