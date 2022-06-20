@@ -3,8 +3,11 @@ import 'package:responsive_layout_grid/responsive_layout_grid.dart';
 
 const maxNumberOfColumns = 8;
 
-class FormLayoutExamplePage extends StatelessWidget {
-  const FormLayoutExamplePage({Key? key}) : super(key: key);
+class FormExamplePage extends StatelessWidget {
+  const FormExamplePage({Key? key}) : super(key: key);
+  static const title='Form';
+  //TODO update to correct demo project and source code file;
+  static const urlToSourceCode='https://github.com/domain-centric/responsive_layout_grid';
 
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -24,7 +27,7 @@ class ResponsiveFormGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) => ResponsiveLayoutGrid(
         maxNumberOfColumns: maxNumberOfColumns,
-    children: [
+        children: [
           _createGroupBar('Participant'),
           _createTextField(
             label: 'Given name',
@@ -82,9 +85,9 @@ class ResponsiveFormGrid extends StatelessWidget {
             position: const CellPosition.nextColumn(),
           ),
           _createButtonBarGutter(),
-          _createSubmitButton(
+          _createCancelButton(
               context, const CellPosition.nextRow(CellAlignment.right)),
-          _createCancelButton(context, const CellPosition.nextColumn()),
+          _createSubmitButton(context, const CellPosition.nextColumn()),
         ],
       );
 

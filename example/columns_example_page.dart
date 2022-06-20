@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:responsive_layout_grid/responsive_layout_grid.dart';
 
-class ColumnLayoutExamplePage extends StatelessWidget {
-  const ColumnLayoutExamplePage({Key? key}) : super(key: key);
+class ColumnsExamplePage extends StatelessWidget {
+  const ColumnsExamplePage({Key? key}) : super(key: key);
+  static const title='Columns';
+  //TODO update to correct demo project and source code file;
+  static const urlToSourceCode='https://github.com/domain-centric/responsive_layout_grid';
 
   @override
   Widget build(BuildContext context) =>
       Scaffold(
           appBar: AppBar(
-            title: const Text('Column Example (resize me!)'),
+            title: const Text('$title Example (resize me!)'),
           ),
           body: Container(
               color: Colors.yellow,
@@ -24,7 +27,7 @@ class ColumnLayoutExamplePage extends StatelessWidget {
 }
 
 /// A custom [ResponsiveLayoutFactory] to create the exact number of
-/// [LayoutCell]s as number of columns
+/// [LayoutCell]s as available number of columns
 class MyLayoutFactory extends ResponsiveLayoutFactory {
   @override
   Layout create(int numberOfColumns, List<Widget> children) {

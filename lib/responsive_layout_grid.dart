@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 
 /// Creates a [Responsive Layout Grid as defined in Material design](https://m3.material.io/foundations/adaptive-design/large-screens)
@@ -18,7 +20,7 @@ class ResponsiveLayoutGrid extends StatefulWidget {
   /// null=unlimited
   final int? maxNumberOfColumns;
 
- final ResponsiveLayoutFactory layoutFactory;
+  final ResponsiveLayoutFactory layoutFactory;
   final List<Widget> children;
 
   static const double defaultGutter = 16;
@@ -68,20 +70,6 @@ abstract class ResponsiveLayoutFactory {
   );
 }
 
-enum ColumnSpanPreference {
-  /// Try to give the cells a column span that is
-  /// as narrow (close to min) as possible
-  closeToMin,
-
-  /// Try to give the cells a column span that is
-  /// somewhere between min and max
-  betweenMinAndMax,
-
-  /// Try to give the cells a column span that is
-  /// as wide (close to max) as possible
-  closeToMax
-}
-
 enum CellAlignment {
   /// Align all cells on the left side of the row
   left,
@@ -91,7 +79,11 @@ enum CellAlignment {
 
   /// Try to fill the row from left to right
   /// by increasing or decreasing the [ColumnSpan] of the cells.
-  justified
+  justify,
+
+  /// Try to align all cells in the middle of the row
+  /// by increasing or decreasing the [ColumnSpan] of the cells.
+  center
 }
 
 class DefaultLayoutFactory implements ResponsiveLayoutFactory {
@@ -103,94 +95,337 @@ class DefaultLayoutFactory implements ResponsiveLayoutFactory {
     List<Widget> children,
   ) {
     var cellAlignment = CellAlignment.left;
-    var layout = Layout(numberOfColumns);
-    var row = Layout.firstRow;
-    var column = Layout.firstColumn;
-    for (var cell in _childrenToResponsiveLayoutCells(children)) {
-      if (_startOnNewRow(cell, layout.availableColumns(row, cellAlignment))) {
-        _addAlignmentCellIfNeeded(
-            layout: layout,
-            row: row,
-            column: column,
-            cellAlignment: cellAlignment);
+    List<TempRow> rows = [];
+    var row = TempRow( numberOfColumns, cellAlignment);
+    rows.add(row);
 
+    for (var cell in _cells(children)) {
+      if (_startOnNewRow(cell, row)) {
         if (cell.position.type == CellPositionType.nextRow) {
           cellAlignment = cell.position.newRowAlignment!;
         }
-        row = layout.nextRow;
-        column = _nextRowColumnNumber(cellAlignment, numberOfColumns);
+        row = TempRow( numberOfColumns, cellAlignment);
+        rows.add(row);
       }
-
-      var columnSpan =
-          cell.columnSpan.spanFor(layout.availableColumns(row, cellAlignment));
-      var leftColumn = cellAlignment == CellAlignment.right
-          ? column - columnSpan + 1
-          : column;
-      layout.addCell(
-        row: row,
-        leftColumn: leftColumn,
-        columnSpan: columnSpan,
-        cell: cell,
-      );
-
-      if (cellAlignment == CellAlignment.right) {
-        column = leftColumn - 1;
-      } else {
-        column += columnSpan;
-      }
+      row.add(cell);
     }
-    _addAlignmentCellIfNeeded(
-      layout: layout,
-      row: row,
-      column: column,
-      cellAlignment: cellAlignment,
-    );
 
-    return layout;
-  }
-
-  int _nextRowColumnNumber(CellAlignment cellAlignment, int numberOfColumns) {
-    return cellAlignment == CellAlignment.right
-        ? numberOfColumns
-        : Layout.firstColumn;
+    return _rowsToLayout(rows, numberOfColumns);
   }
 
   bool _startOnNewRow(
     ResponsiveLayoutCell cell,
-    int availableColumns,
+    TempRow row,
   ) =>
-      cell.position.type == CellPositionType.nextRow ||
-      !cell.columnSpan.fitsFor(availableColumns);
-
-  ///TODO remove when ResponsiveLayoutGrid uses CustomMultiChildLayout with MultiChildLayoutDelegate
-  void _addAlignmentCellIfNeeded({
-    required Layout layout,
-    required int row,
-    required int column,
-    required CellAlignment cellAlignment,
-  }) {
-    if (cellAlignment == CellAlignment.right) {
-      var availableColumns = layout.availableColumns(row, cellAlignment);
-      if (availableColumns > 0 && availableColumns < layout.numberOfColumns) {
-        layout.addCell(
-            leftColumn: Layout.firstColumn,
-            columnSpan: availableColumns,
-            row: row,
-            cell: const ResponsiveLayoutCell(child: SizedBox()));
-      }
-    }
-  }
+      cell.position.type == CellPositionType.nextRow || !row.canAddCell(cell);
 
   /// Converts children by wrapping each child in a [ResponsiveLayoutCell]
   /// if it is of another type.
-  List<ResponsiveLayoutCell> _childrenToResponsiveLayoutCells(
-      List<Widget> children) {
+  List<ResponsiveLayoutCell> _cells(List<Widget> children) {
     var responsiveLayoutCells = children
         .map((widget) => widget is ResponsiveLayoutCell
             ? widget
             : ResponsiveLayoutCell(child: widget))
         .toList();
     return responsiveLayoutCells;
+  }
+
+  Layout _rowsToLayout(List<TempRow> rows, int numberOfColumns) {
+    var rowNr = Layout.firstRow;
+    var layout = Layout(numberOfColumns);
+
+    for (var row in rows) {
+      if (row.isNotEmpty) {
+        row.addToLayout(rowNr, layout);
+        rowNr += 1;
+      }
+    }
+    return layout;
+  }
+}
+
+/// holds [ResponsiveLayoutCell]s that belong to the same row but do not have a
+/// final position or column span
+//TODO rename when ResponsiveLayoutGrid uses CustomMultiChildLayout with MultiChildLayoutDelegate,
+class TempRow {
+  final int totalColumns;
+  final CellAlignment cellAlignment;
+
+  /// cells from left to right
+  final List<ResponsiveLayoutCell> _cells = [];
+
+  /// [_cellColumnSpans] and [_cells] always correspond:
+  /// _cellsColumnSpans[index] is the column span of cells[index]
+  List<int> _cellColumnSpans = [];
+
+  TempRow(
+    this.totalColumns,
+    this.cellAlignment,
+  );
+
+  bool get isNotEmpty => _cells.isNotEmpty;
+
+  /// The number of columns that the first column must fill with emptiness
+  int get _alignmentSpan {
+    switch (cellAlignment) {
+      case CellAlignment.right:
+        return _freeColumns;
+      case CellAlignment.center:
+        return (_freeColumns / 2).truncate();
+      default:
+        return 0;
+    }
+  }
+
+  add(ResponsiveLayoutCell cell) {
+    _cells.add(cell);
+    _optimizeColumnSpans();
+  }
+
+  /// Score for how well the cells fir the columns.
+  /// The higher the score the better the fit and vise versa
+  double get score {
+    switch (cellAlignment) {
+      case CellAlignment.justify:
+        return _alignJustifiedScore + _columnSpanScore / 1000;
+      case CellAlignment.center:
+        return _alignCenterScore + _columnSpanScore / 1000;
+      default:
+        return _columnSpanScore;
+    }
+  }
+
+  /// Score for how close the column spans are to the preferred column spans.
+  /// * 1= all cells have their preferred column span
+  /// * the lower the value= the bigger the deviation compared to the
+  ///   preferred column spans
+  double get _columnSpanScore {
+    double score = 1;
+    for (int i = 0; i < _cells.length; i++) {
+      score *= _columnSpanScoreForColumn(i);
+    }
+    return score;
+  }
+
+  /// Score for how close the column span is to the preferred column span.
+  /// * 1= the cell has the preferred column span
+  /// * the lower the value= the bigger the deviation compared to the
+  ///   preferred column span
+  double _columnSpanScoreForColumn(int columnIndex) =>
+      1 /
+      ((_cells[columnIndex].columnSpan.preferred -
+                  _cellColumnSpans[columnIndex])
+              .abs() +
+          1);
+
+  /// Score for how well the cells can be justified:
+  /// * 1= The cells cover all columns
+  /// * the lower the value= the lower number of columns that are covered
+  double get _alignJustifiedScore => 1 / (_freeColumns + 1);
+
+  /// Score for how well the cells can be centered:
+  /// * 1= The cells can be perfectly centered
+  /// * 0.5= The cells can not be centered
+  ///   e.g you cant center a [ResponsiveLayoutCell]
+  ///   with a ColumnSpan.size(2) on 3 columns.
+  double get _alignCenterScore =>
+      (_occupiedColumns % 2) == (totalColumns % 2) ? 1 : 0.5;
+
+  bool get _cellsFitInRow => _freeColumns >= 0;
+
+  int get _occupiedColumns => _cellColumnSpans.reduce((a, b) => a + b);
+
+  int get _freeColumns => totalColumns - _occupiedColumns;
+
+  bool canAddCell(ResponsiveLayoutCell newCell) {
+    List<int> columnSpansWithoutNewCell = [..._cellColumnSpans];
+    var scoreWithoutNewCell = score;
+    add(newCell);
+    var scoreWithNewCell = score;
+    var fits = _cellsFitInRow;
+
+    _cells.removeLast();
+    _cellColumnSpans = columnSpansWithoutNewCell;
+    return fits & (scoreWithoutNewCell <= scoreWithNewCell);
+  }
+
+  /// Adds this [TempRow] to a [Layout]
+  void addToLayout(int rowNr, Layout layout) {
+    // TODO when ResponsiveLayoutGrid uses CustomMultiChildLayout with MultiChildLayoutDelegate replace with: var columnNr = Layout.firstColumn+ _alignmentSpan;
+    var columnNr = Layout.firstColumn;
+
+    ///TODO when ResponsiveLayoutGrid uses CustomMultiChildLayout with MultiChildLayoutDelegate, remove:
+    var alignmentSpan = _alignmentSpan;
+    if (alignmentSpan > 0) {
+      // Start with alignment cell
+      layout.addCell(
+          leftColumn: columnNr,
+          columnSpan: alignmentSpan,
+          row: rowNr,
+          cell: const SizedBox());
+      columnNr += alignmentSpan;
+    }
+
+    for (int i = 0; i < _cells.length; i++) {
+      var cell = _cells[i];
+      var columnSpan = _cellColumnSpans[i];
+      layout.addCell(
+          leftColumn: columnNr,
+          columnSpan: columnSpan,
+          row: rowNr,
+          cell: cell.child);
+      columnNr += columnSpan;
+    }
+  }
+
+  void _optimizeColumnSpans() {
+    _cellColumnSpans = _cells.map((cell) => cell.columnSpan.preferred).toList();
+
+    _shrinkColumnSpansToFitInRow();
+
+    switch (cellAlignment) {
+      case CellAlignment.justify:
+        _growColumnSpansToJustifyRow();
+        break;
+      case CellAlignment.center:
+        _changeColumnSpansToCenterRow();
+        break;
+      default:
+    }
+  }
+
+  void _shrinkColumnSpansToFitInRow() {
+    var occupiedColumns = _occupiedColumns;
+    if (occupiedColumns <= totalColumns) {
+      // It fits no need to shrink
+      return;
+    }
+    if (_cells.length == 1) {
+      // Each single cell needs to fit at least once
+      _cellColumnSpans[0] = totalColumns;
+      return;
+    }
+
+    var columnsToShrink = occupiedColumns - totalColumns;
+    _shrinkColumnSpansProportionally(columnsToShrink);
+  }
+
+  void _shrinkColumnSpansProportionally(int columnsToShrink) {
+    var nrOfColumnsCellsCanShrink = _nrOfColumnsCellsCanShrink();
+    var totalNrOfColumnsCellsCanShrink =
+        nrOfColumnsCellsCanShrink.reduce((a, b) => a + b);
+    if (totalNrOfColumnsCellsCanShrink == 0 ||
+        columnsToShrink > totalNrOfColumnsCellsCanShrink) {
+      // It will not fit. do not even try
+      return;
+    }
+
+    for (int i = 0; i < _cells.length; i++) {
+      var factor = columnsToShrink / totalNrOfColumnsCellsCanShrink;
+      var cellShrink = (nrOfColumnsCellsCanShrink[i] * factor).round();
+      _cellColumnSpans[i] = _cellColumnSpans[i] - cellShrink;
+      columnsToShrink -= cellShrink;
+      totalNrOfColumnsCellsCanShrink -= nrOfColumnsCellsCanShrink[i];
+      if (columnsToShrink == 0) {
+        //done
+        return;
+      }
+    }
+  }
+
+  void _growColumnSpansProportionally(int columnsToGrow) {
+    var nrOfColumnsCellsCanGrow = _nrOfColumnsCellsCanGrow();
+    var totalNrOfColumnsCellsCanGrow =
+        nrOfColumnsCellsCanGrow.reduce((a, b) => a + b);
+    if (totalNrOfColumnsCellsCanGrow == 0) {
+      // Can not grow
+      return;
+    } else if (columnsToGrow > totalNrOfColumnsCellsCanGrow) {
+      // can not grow more than possible
+      columnsToGrow = totalNrOfColumnsCellsCanGrow;
+    }
+
+    for (int i = 0; i < _cells.length; i++) {
+      var factor = columnsToGrow / totalNrOfColumnsCellsCanGrow;
+      var cellGrowth = (nrOfColumnsCellsCanGrow[i] * factor).round();
+      _cellColumnSpans[i] = _cellColumnSpans[i] + cellGrowth;
+      columnsToGrow -= cellGrowth;
+      totalNrOfColumnsCellsCanGrow -= nrOfColumnsCellsCanGrow[i];
+      if (columnsToGrow == 0) {
+        //done
+        return;
+      }
+    }
+  }
+
+  void _growColumnSpansToJustifyRow() {
+    var freeColumns = _freeColumns;
+    if (freeColumns > 0) {
+      _growColumnSpansProportionally(freeColumns);
+    }
+  }
+
+  void _changeColumnSpansToCenterRow() {
+    if (_alignCenterScore == 1) {
+      // Center alignment is perfect, no need to grow or shrink a column span
+      return;
+    }
+    var nrOfColumnsCellsCanGrow = _nrOfColumnsCellsCanGrow();
+    if (nrOfColumnsCellsCanGrow.any((growSize) => growSize > 0)) {
+      _growColumnSpanOfCellThatCanGrowTheMost(nrOfColumnsCellsCanGrow);
+      return;
+    }
+    var nrOfColumnsCellsCanShrink = _nrOfColumnsCellsCanShrink();
+    if (nrOfColumnsCellsCanShrink.any((growSize) => growSize > 0)) {
+      _shrinkColumnSpanOfCellThatCanShrinkTheMost(nrOfColumnsCellsCanShrink);
+      return;
+    }
+    // Center alignment of this row won't be perfect. Nothing we can do.
+  }
+
+  void _growColumnSpanOfCellThatCanGrowTheMost(
+      List<int> nrOfColumnsCellsCanGrow) {
+    var biggestGrowValue = nrOfColumnsCellsCanGrow.reduce(max);
+    var indexOfCellThatCanGrowTheMost =
+        nrOfColumnsCellsCanGrow.indexOf(biggestGrowValue);
+    _cellColumnSpans[indexOfCellThatCanGrowTheMost]++;
+  }
+
+  void _shrinkColumnSpanOfCellThatCanShrinkTheMost(
+      List<int> nrOfColumnsCellsCanShrink) {
+    var biggestShrinkValue = nrOfColumnsCellsCanShrink.reduce(max);
+    var indexOfCellThatCanShrinkTheMost =
+        nrOfColumnsCellsCanShrink.indexOf(biggestShrinkValue);
+    _cellColumnSpans[indexOfCellThatCanShrinkTheMost]--;
+  }
+
+  _nrOfColumnsCellCanGrow(int columnIndex) =>
+      min(_cells[columnIndex].columnSpan.max, totalColumns) -
+      _cellColumnSpans[columnIndex];
+
+  List<int> _nrOfColumnsCellsCanGrow() {
+    List<int> nrOfColumnsCellsCanGrow = [];
+    for (int i = 0; i < _cells.length; i++) {
+      nrOfColumnsCellsCanGrow.add(_nrOfColumnsCellCanGrow(i));
+    }
+    return nrOfColumnsCellsCanGrow;
+  }
+
+  _nrOfColumnsCellCanShrink(int columnIndex) {
+    var columnSpan = _cells[columnIndex].columnSpan;
+    if (columnSpan.preferred == ColumnSpan.remainingColumns) {
+      // can not shrink wen cell needs to span the remaining columns
+      return 0;
+    }
+    return _cellColumnSpans[columnIndex] - columnSpan.min;
+  }
+
+  List<int> _nrOfColumnsCellsCanShrink() {
+    List<int> nrOfColumnsCellsCanShrink = [];
+    for (int i = 0; i < _cells.length; i++) {
+      nrOfColumnsCellsCanShrink.add(_nrOfColumnsCellCanShrink(i));
+    }
+    return nrOfColumnsCellsCanShrink;
   }
 }
 
@@ -237,6 +472,7 @@ class LayoutCell {
       row == this.row && column >= leftColumn && column <= rightColumn;
 }
 
+///TODO remove when ResponsiveLayoutGrid uses CustomMultiChildLayout with MultiChildLayoutDelegate,
 class LayoutRow {
   /// [LayoutCell]s from left to right
   final List<LayoutCell> cells;
@@ -521,7 +757,7 @@ class ResponsiveLayoutCell extends StatelessWidget {
   const ResponsiveLayoutCell({
     Key? key,
     this.position = const CellPosition.nextColumn(),
-    this.columnSpan = const ColumnSpan.auto(),
+    this.columnSpan = const ColumnSpan.size(1),
     required this.child,
   }) : super(key: key);
 
@@ -530,83 +766,89 @@ class ResponsiveLayoutCell extends StatelessWidget {
 }
 
 class ColumnSpan {
-  /// a constant value to indicate that the [max] is calculated based on the
-  /// minimum required width of the [ResponsiveLayoutCell]
-  static const int automatic = -1;
+  /// [min], [preferred] and [max] can have the [remainingColumns] value, to
+  /// indicate that the [ColumnSpan] of a [ResponsiveLayoutCell] should take the
+  /// remaining columns.
+  ///
+  /// We assume that [min], [preferred] and [max] values are
+  /// normally below 2^32.
+  static const remainingColumns = 4294967296;
 
-  /// [min] number of columns that the [ResponsiveLayoutCell] must span
-  /// [min] must be < [max].
-  /// The [ResponsiveLayoutCell] will be put on the next row
-  /// when [min] > remaining columns.
-  /// Note that the [ColumnSpan] will be smaller
-  /// when the number of columns of [ResponsiveLayoutGrid] > [min].
+  /// [min] number of columns that the [ResponsiveLayoutCell] must span.
+  ///
+  /// The [DefaultLayoutFactory] will use the [min] value when
+  /// positioning the [ResponsiveLayoutCell], but will use a smaller value
+  /// when the number of columns of a [ResponsiveLayoutGrid] < [min].
   final int min;
 
+  /// [preferred] number of columns that the [ResponsiveLayoutCell]
+  /// ideally spans.
+  ///
+  /// The [DefaultLayoutFactory] will use the [preferred] value when
+  /// positioning the [ResponsiveLayoutCell], but might choose
+  /// a lower or higher [ColumnSpan] when needed (see [min] and [max]).
+  final int preferred;
+
   /// [max] number of columns that the [Widget] must span.
-  /// [max] must be > [min].
+  ///
   /// Note that the [ColumnSpan] will be smaller
   /// when the number of columns of [ResponsiveLayoutGrid] > [max].
   /// * When [max] = null it means infinite (=the remaining available columns
   ///   in [ResponsiveLayoutGrid];
   /// * When [max] is [automatic] it means the [ColumnSpan] is calculated based
   ///   on the minimum required width of the [ResponsiveLayoutCell]
-  final int? max;
+  final int max;
 
-  ColumnSpan.remainingWidth([this.min = 1]) : max = null {
-    validateMinMax();
+  ColumnSpan.remainingWidth({this.min = 1, this.preferred = remainingColumns})
+      : max = remainingColumns {
+    validate();
   }
 
-  ColumnSpan.max(this.max) : min = 1 {
-    validateMinMax();
+  ColumnSpan.max(this.max, {int? preferred})
+      : min = 1,
+        preferred = _defaultPreferred(1, preferred, max) {
+    validate();
   }
 
-  ColumnSpan.range(this.min, this.max) {
-    validateMinMax();
+  ColumnSpan.range({required this.min, int? preferred, required this.max})
+      : preferred = _defaultPreferred(min, preferred, max) {
+    validate();
   }
 
   const ColumnSpan.size(int columns)
       : min = columns,
+        preferred = columns,
         max = columns;
 
-  /// The [ColumnSpan] is calculated based on the minimum width of
-  /// the [ResponsiveLayoutCell]
-  const ColumnSpan.auto()
-      : min = 1,
-        max = automatic;
-
-  void validateMinMax() {
-    if (max == automatic) {
-      if (min != 1) {
-        throw Exception(
-            "The min value must be 1 when you are using an automatic $ColumnSpan");
-      }
-    } else {
-      if (min < 1) {
-        throw Exception("The min value must be > 1");
-      }
-      if (max != null && min > max!) {
-        throw Exception("The min value must be < max");
-      }
+  /// The rule is: 1 <= [min] <= [preferred] <= [max] <=[remainingColumns].
+  void validate() {
+    if (1 > min) {
+      throw ArgumentError("min must be >= 1", 'min');
+    }
+    if (min > preferred) {
+      throw ArgumentError("preferred must be >= min", 'preferred');
+    }
+    if (preferred > max) {
+      throw ArgumentError("max must be >= preferred", 'max');
+    }
+    if (max > remainingColumns) {
+      throw ArgumentError("max must be <= $remainingColumns", 'max');
     }
   }
 
-  bool fitsFor(int availableColumns) {
-    return min <= availableColumns;
+  static _defaultPreferred(int min, int? preferred, int max) {
+    if (min > max) {
+      throw ArgumentError("min must be <= max");
+    }
+    if (preferred != null) {
+      return preferred;
+    }
+    return ((max - min) / 2).round() + min;
   }
 
-  /// returns the number of columns based on the remaining number of columns
-  int spanFor(int availableColumns) {
-    if (max == null) {
-      return availableColumns;
-    }
-    if (max == automatic) {
-      return 1; // TODO calculate
-    }
-    if (max! > availableColumns) {
-      return availableColumns;
-    } else {
-      return max!;
-    }
+  @override
+  String toString() {
+    return '{$min, $preferred, $max}';
   }
 }
 
@@ -621,3 +863,4 @@ class ColumnSpan {
 ///
 /// Smaller elements, such as icons, can align to a 4dp grid, while typography
 /// can fall on a 4dp baseline grid. This allows each line’s typographi
+class MaterialMeasurement {}

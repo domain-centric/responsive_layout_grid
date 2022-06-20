@@ -87,9 +87,9 @@ class ResponsiveFormGrid extends StatelessWidget {
             position: const CellPosition.nextColumn(),
           ),
           _createButtonBarGutter(),
-          _createSubmitButton(
+          _createCancelButton(
               context, const CellPosition.nextRow(CellAlignment.right)),
-          _createCancelButton(context, const CellPosition.nextColumn()),
+          _createSubmitButton(context, const CellPosition.nextColumn()),
         ],
       );
 
