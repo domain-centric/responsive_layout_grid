@@ -1,0 +1,5 @@
+{ImportFile path='doc/template/badges.mdt'}
+
+{ImportFile path='doc/template/01-ResponsiveLayoutGrid.mdt'}
+
+{ImportFile path='doc/template/example.mdt' title='# Examples'}

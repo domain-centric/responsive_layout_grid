@@ -1,13 +1,17 @@
+/*
+ * Copyright (c) 2022. By Nils ten Hoeve. See LICENSE file in project.
+ */
+
 import 'package:flutter/material.dart';
-import 'package:responsive_layout_grid/responsive_layout_grid.dart';
+import 'package:responsive_layout_grid/src/responsive_layout_grid.dart';
 
 import 'random.dart';
 import 'scroll_view_with_scroll_bar.dart';
 
-
 class AlignmentExamplePage extends StatelessWidget {
   const AlignmentExamplePage({Key? key}) : super(key: key);
   static const title='Alignment';
+
   //TODO update to correct demo project and source code file;
   static const urlToSourceCode='https://github.com/domain-centric/responsive_layout_grid';
 
@@ -31,8 +35,7 @@ class AlignmentExamplePage extends StatelessWidget {
             )),
       ));
 
-  List<ResponsiveLayoutCell> _createCells(
-      String text, CellAlignment cellAlignment, MaterialColor color) {
+  List<ResponsiveLayoutCell> _createCells(String text, CellAlignment cellAlignment, MaterialColor color) {
     List<ResponsiveLayoutCell> cells = [];
     cells.add(_createGroupBar(cellAlignment, text, color));
 
@@ -45,8 +48,7 @@ class AlignmentExamplePage extends StatelessWidget {
     return cells;
   }
 
-  ResponsiveLayoutCell _createCell(
-      int min, int preferred, int max, MaterialColor color) {
+  ResponsiveLayoutCell _createCell(int min, int preferred, int max, MaterialColor color) {
     return ResponsiveLayoutCell(
       position: const CellPosition.nextColumn(),
       columnSpan: ColumnSpan.range(min: min, preferred: preferred, max: max),
@@ -57,11 +59,9 @@ class AlignmentExamplePage extends StatelessWidget {
     );
   }
 
-  ResponsiveLayoutCell _createGroupBar(
-    CellAlignment cellAlignment,
-    String text,
-    MaterialColor color,
-  ) {
+  ResponsiveLayoutCell _createGroupBar(CellAlignment cellAlignment,
+      String text,
+      MaterialColor color,) {
     return ResponsiveLayoutCell(
       position: CellPosition.nextRow(cellAlignment),
       columnSpan: ColumnSpan.remainingWidth(),
@@ -69,9 +69,9 @@ class AlignmentExamplePage extends StatelessWidget {
         color: color,
         child: Center(
             child: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Text(text.toUpperCase()),
-        )),
+              padding: const EdgeInsets.all(8.0),
+              child: Text(text.toUpperCase()),
+            )),
       ),
     );
   }

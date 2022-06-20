@@ -1,5 +1,9 @@
+/*
+ * Copyright (c) 2022. By Nils ten Hoeve. See LICENSE file in project.
+ */
+
 import 'package:flutter/material.dart';
-import 'package:responsive_layout_grid/responsive_layout_grid.dart';
+import 'package:responsive_layout_grid/src/responsive_layout_grid.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 
 import 'alignment_example_page.dart';
@@ -18,7 +22,7 @@ class HomePage extends StatelessWidget {
       ),
       body: const SingleChildScrollView(
         child:
-            Padding(padding: EdgeInsets.all(32), child: ResponsiveHomeGrid()),
+        Padding(padding: EdgeInsets.all(32), child: ResponsiveHomeGrid()),
       ));
 }
 
@@ -27,105 +31,105 @@ class ResponsiveHomeGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ResponsiveLayoutGrid(
-        maxNumberOfColumns: 2,
-        children: [
-          ResponsiveLayoutCell(
-            position: const CellPosition.nextRow(),
-            columnSpan: ColumnSpan.remainingWidth(),
-            child: const GroupBar("Examples"),
-          ),
-          const ResponsiveLayoutCell(
-            position: CellPosition.nextRow(),
-            child: NavigateToPageButton(
-              text: ColumnsExamplePage.title,
-              page: ColumnsExamplePage(),
-            ),
-          ),
-          const ResponsiveLayoutCell(
-            position: CellPosition.nextColumn(),
-            child: OpenUrlButton(
-              text: '${ColumnsExamplePage.title} Source Code',
-              url: FormExamplePage.urlToSourceCode,
-            ),
-          ),
-          const ResponsiveLayoutCell(
-            position: CellPosition.nextRow(),
-            child: NavigateToPageButton(
-              text: FormExamplePage.title,
-              page: FormExamplePage(),
-            ),
-          ),
-          const ResponsiveLayoutCell(
-            position: CellPosition.nextColumn(),
-            child: OpenUrlButton(
-              text: '${FormExamplePage.title} Source Code',
-              url: FormExamplePage.urlToSourceCode,
-            ),
-          ),
-          ResponsiveLayoutCell(
-            //TODO move to other project
-            position: const CellPosition.nextRow(),
-            child: OutlinedButton(
-                onPressed: () {
-                  Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) =>
-                              const Form2LayoutExamplePage()));
-                },
-                child: const Text('Form2 Layout')),
-          ),
-          const ResponsiveLayoutCell(
-            position: CellPosition.nextRow(),
-            child: NavigateToPageButton(
-              text: NewsPaperExamplePage.title,
-              page: NewsPaperExamplePage(),
-            ),
-          ),
-          const ResponsiveLayoutCell(
-            position: CellPosition.nextColumn(),
-            child: OpenUrlButton(
-              text: '${NewsPaperExamplePage.title} Source Code',
-              url: NewsPaperExamplePage.urlToSourceCode,
-            ),
-          ),
-          const ResponsiveLayoutCell(
-            position: CellPosition.nextRow(),
-            child: NavigateToPageButton(
-              text: AlignmentExamplePage.title,
-              page: AlignmentExamplePage(),
-            ),
-          ),
-          const ResponsiveLayoutCell(
-            position: CellPosition.nextColumn(),
-            child: OpenUrlButton(
-              text: '${AlignmentExamplePage.title} Source Code',
-              url: AlignmentExamplePage.urlToSourceCode,
-            ),
-          ),
-          ResponsiveLayoutCell(
-            position: const CellPosition.nextRow(),
-            columnSpan: ColumnSpan.remainingWidth(),
-            child: const GroupBar("Documentation"),
-          ),
-          const ResponsiveLayoutCell(
-            position: CellPosition.nextRow(),
-            child: OpenUrlButton(
-              text: 'Material Design V2',
-              url:
-                  'https://material.io/design/layout/responsive-layout-grid.html',
-            ),
-          ),
-          const ResponsiveLayoutCell(
-            position: CellPosition.nextColumn(),
-            child: OpenUrlButton(
-              text: 'Material Design V3',
-              url:
-                  'https://m3.material.io/foundations/adaptive-design/large-screens/overview',
-            ),
-          ),
-        ],
-      );
+    maxNumberOfColumns: 2,
+    children: [
+      ResponsiveLayoutCell(
+        position: const CellPosition.nextRow(),
+        columnSpan: ColumnSpan.remainingWidth(),
+        child: const GroupBar("Examples"),
+      ),
+      const ResponsiveLayoutCell(
+        position: CellPosition.nextRow(),
+        child: NavigateToPageButton(
+          text: ColumnsExamplePage.title,
+          page: ColumnsExamplePage(),
+        ),
+      ),
+      const ResponsiveLayoutCell(
+        position: CellPosition.nextColumn(),
+        child: OpenUrlButton(
+          text: '${ColumnsExamplePage.title} Source Code',
+          url: FormExamplePage.urlToSourceCode,
+        ),
+      ),
+      const ResponsiveLayoutCell(
+        position: CellPosition.nextRow(),
+        child: NavigateToPageButton(
+          text: FormExamplePage.title,
+          page: FormExamplePage(),
+        ),
+      ),
+      const ResponsiveLayoutCell(
+        position: CellPosition.nextColumn(),
+        child: OpenUrlButton(
+          text: '${FormExamplePage.title} Source Code',
+          url: FormExamplePage.urlToSourceCode,
+        ),
+      ),
+      ResponsiveLayoutCell(
+        //TODO move to other project
+        position: const CellPosition.nextRow(),
+        child: OutlinedButton(
+            onPressed: () {
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) =>
+                      const Form2LayoutExamplePage()));
+            },
+            child: const Text('Form2 Layout')),
+      ),
+      const ResponsiveLayoutCell(
+        position: CellPosition.nextRow(),
+        child: NavigateToPageButton(
+          text: NewsPaperExamplePage.title,
+          page: NewsPaperExamplePage(),
+        ),
+      ),
+      const ResponsiveLayoutCell(
+        position: CellPosition.nextColumn(),
+        child: OpenUrlButton(
+          text: '${NewsPaperExamplePage.title} Source Code',
+          url: NewsPaperExamplePage.urlToSourceCode,
+        ),
+      ),
+      const ResponsiveLayoutCell(
+        position: CellPosition.nextRow(),
+        child: NavigateToPageButton(
+          text: AlignmentExamplePage.title,
+          page: AlignmentExamplePage(),
+        ),
+      ),
+      const ResponsiveLayoutCell(
+        position: CellPosition.nextColumn(),
+        child: OpenUrlButton(
+          text: '${AlignmentExamplePage.title} Source Code',
+          url: AlignmentExamplePage.urlToSourceCode,
+        ),
+      ),
+      ResponsiveLayoutCell(
+        position: const CellPosition.nextRow(),
+        columnSpan: ColumnSpan.remainingWidth(),
+        child: const GroupBar("Documentation"),
+      ),
+      const ResponsiveLayoutCell(
+        position: CellPosition.nextRow(),
+        child: OpenUrlButton(
+          text: 'Material Design V2',
+          url:
+          'https://material.io/design/layout/responsive-layout-grid.html',
+        ),
+      ),
+      const ResponsiveLayoutCell(
+        position: CellPosition.nextColumn(),
+        child: OpenUrlButton(
+          text: 'Material Design V3',
+          url:
+          'https://m3.material.io/foundations/adaptive-design/large-screens/overview',
+        ),
+      ),
+    ],
+  );
 }
 
 class OpenUrlButton extends StatelessWidget {
@@ -171,9 +175,9 @@ class ButtonText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.fromLTRB(0,16,0,16),
-        child: Text(text),
-      );
+    padding: const EdgeInsets.fromLTRB(0,16,0,16),
+    child: Text(text),
+  );
 }
 
 class GroupBar extends StatelessWidget {

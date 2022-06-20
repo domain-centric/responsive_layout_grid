@@ -1,11 +1,17 @@
+/*
+ * Copyright (c) 2022. By Nils ten Hoeve. See LICENSE file in project.
+ */
+
 import 'package:flutter/material.dart';
-import 'package:responsive_layout_grid/responsive_layout_grid.dart';
+import 'package:responsive_layout_grid/src/responsive_layout_grid.dart';
 
 class ColumnsExamplePage extends StatelessWidget {
   const ColumnsExamplePage({Key? key}) : super(key: key);
-  static const title='Columns';
+  static const title = 'Columns';
+
   //TODO update to correct demo project and source code file;
-  static const urlToSourceCode='https://github.com/domain-centric/responsive_layout_grid';
+  static const urlToSourceCode =
+      'https://github.com/domain-centric/responsive_layout_grid';
 
   @override
   Widget build(BuildContext context) =>

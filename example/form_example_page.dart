@@ -1,24 +1,29 @@
+/*
+ * Copyright (c) 2022. By Nils ten Hoeve. See LICENSE file in project.
+ */
+
 import 'package:flutter/material.dart';
-import 'package:responsive_layout_grid/responsive_layout_grid.dart';
+import 'package:responsive_layout_grid/src/responsive_layout_grid.dart';
 
 const maxNumberOfColumns = 8;
 
 class FormExamplePage extends StatelessWidget {
   const FormExamplePage({Key? key}) : super(key: key);
-  static const title='Form';
+  static const title = 'Form';
+
   //TODO update to correct demo project and source code file;
   static const urlToSourceCode='https://github.com/domain-centric/responsive_layout_grid';
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(
-          title: const Text('Sport Camp Registration Form (resize me!)'),
-        ),
-        body: const SingleChildScrollView(
-          child:
-              Padding(padding: EdgeInsets.all(8), child: ResponsiveFormGrid()),
-        ),
-      );
+    appBar: AppBar(
+      title: const Text('Sport Camp Registration Form (resize me!)'),
+    ),
+    body: const SingleChildScrollView(
+      child:
+      Padding(padding: EdgeInsets.all(8), child: ResponsiveFormGrid()),
+    ),
+  );
 }
 
 class ResponsiveFormGrid extends StatelessWidget {
@@ -26,81 +31,81 @@ class ResponsiveFormGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ResponsiveLayoutGrid(
-        maxNumberOfColumns: maxNumberOfColumns,
-        children: [
-          _createGroupBar('Participant'),
-          _createTextField(
-            label: 'Given name',
-            position: const CellPosition.nextRow(),
-          ),
-          _createTextField(
-            label: 'Family name',
-            position: const CellPosition.nextColumn(),
-          ),
-          _createTextField(
-            label: 'Date of birth',
-            position: const CellPosition.nextColumn(),
-          ),
-          _createTextField(
-              label: 'Remarks (e.g. medicines and allergies)',
-              position: const CellPosition.nextRow(),
-              columnSpan: const ColumnSpan.size(3),
-              maxLines: 5),
-          _createGroupBar('Home Address'),
-          _createTextField(
-              label: 'Street',
-              position: const CellPosition.nextRow(),
-              maxLines: 2),
-          _createTextField(
-            label: 'City',
-            position: const CellPosition.nextColumn(),
-          ),
-          _createTextField(
-            label: 'Region',
-            position: const CellPosition.nextColumn(),
-          ),
-          _createTextField(
-            label: 'Postal code',
-            position: const CellPosition.nextColumn(),
-          ),
-          _createTextField(
-            label: 'Country',
-            position: const CellPosition.nextColumn(),
-          ),
-          _createGroupBar('Consent'),
-          _createTextField(
-            label: 'Given name of parent or guardian',
-            position: const CellPosition.nextRow(),
-          ),
-          _createTextField(
-            label: 'Family name of parent or guardian',
-            position: const CellPosition.nextColumn(),
-          ),
-          _createTextField(
-            label: 'Phone number of parent or guardian',
-            position: const CellPosition.nextRow(),
-          ),
-          _createTextField(
-            label: 'Second phone number in case of emergency',
-            position: const CellPosition.nextColumn(),
-          ),
-          _createButtonBarGutter(),
-          _createCancelButton(
-              context, const CellPosition.nextRow(CellAlignment.right)),
-          _createSubmitButton(context, const CellPosition.nextColumn()),
-        ],
-      );
+    maxNumberOfColumns: maxNumberOfColumns,
+    children: [
+      _createGroupBar('Participant'),
+      _createTextField(
+        label: 'Given name',
+        position: const CellPosition.nextRow(),
+      ),
+      _createTextField(
+        label: 'Family name',
+        position: const CellPosition.nextColumn(),
+      ),
+      _createTextField(
+        label: 'Date of birth',
+        position: const CellPosition.nextColumn(),
+      ),
+      _createTextField(
+          label: 'Remarks (e.g. medicines and allergies)',
+          position: const CellPosition.nextRow(),
+          columnSpan: const ColumnSpan.size(3),
+          maxLines: 5),
+      _createGroupBar('Home Address'),
+      _createTextField(
+          label: 'Street',
+          position: const CellPosition.nextRow(),
+          maxLines: 2),
+      _createTextField(
+        label: 'City',
+        position: const CellPosition.nextColumn(),
+      ),
+      _createTextField(
+        label: 'Region',
+        position: const CellPosition.nextColumn(),
+      ),
+      _createTextField(
+        label: 'Postal code',
+        position: const CellPosition.nextColumn(),
+      ),
+      _createTextField(
+        label: 'Country',
+        position: const CellPosition.nextColumn(),
+      ),
+      _createGroupBar('Consent'),
+      _createTextField(
+        label: 'Given name of parent or guardian',
+        position: const CellPosition.nextRow(),
+      ),
+      _createTextField(
+        label: 'Family name of parent or guardian',
+        position: const CellPosition.nextColumn(),
+      ),
+      _createTextField(
+        label: 'Phone number of parent or guardian',
+        position: const CellPosition.nextRow(),
+      ),
+      _createTextField(
+        label: 'Second phone number in case of emergency',
+        position: const CellPosition.nextColumn(),
+      ),
+      _createButtonBarGutter(),
+      _createCancelButton(
+          context, const CellPosition.nextRow(CellAlignment.right)),
+      _createSubmitButton(context, const CellPosition.nextColumn()),
+    ],
+  );
 
   ResponsiveLayoutCell _createGroupBar(String title) => ResponsiveLayoutCell(
-        position: const CellPosition.nextRow(),
-        columnSpan: ColumnSpan.remainingWidth(),
-        child: Container(
-          padding: const EdgeInsets.all(8),
-          color: Colors.grey,
-          child: Text(title,
-              style: const TextStyle(color: Colors.white, fontSize: 18)),
-        ),
-      );
+    position: const CellPosition.nextRow(),
+    columnSpan: ColumnSpan.remainingWidth(),
+    child: Container(
+      padding: const EdgeInsets.all(8),
+      color: Colors.grey,
+      child: Text(title,
+          style: const TextStyle(color: Colors.white, fontSize: 18)),
+    ),
+  );
 
   /// TODO remove later
   /// Used with gray background
@@ -150,8 +155,7 @@ class ResponsiveFormGrid extends StatelessWidget {
         ),
       );
 
-  ResponsiveLayoutCell _createSubmitButton(
-      BuildContext context, CellPosition position) {
+  ResponsiveLayoutCell _createSubmitButton(BuildContext context, CellPosition position) {
     return ResponsiveLayoutCell(
         position: position,
         child: ElevatedButton(
@@ -159,12 +163,11 @@ class ResponsiveFormGrid extends StatelessWidget {
             Navigator.pop(context);
           },
           child:
-              const Padding(padding: EdgeInsets.all(16), child: Text('Submit')),
+          const Padding(padding: EdgeInsets.all(16), child: Text('Submit')),
         ));
   }
 
-  ResponsiveLayoutCell _createCancelButton(
-      BuildContext context, CellPosition position) {
+  ResponsiveLayoutCell _createCancelButton(BuildContext context, CellPosition position) {
     return ResponsiveLayoutCell(
         position: position,
         child: OutlinedButton(
@@ -172,12 +175,12 @@ class ResponsiveFormGrid extends StatelessWidget {
             Navigator.pop(context);
           },
           child:
-              const Padding(padding: EdgeInsets.all(16), child: Text('Cancel')),
+          const Padding(padding: EdgeInsets.all(16), child: Text('Cancel')),
         ));
   }
 
   _createButtonBarGutter() => const ResponsiveLayoutCell(
-        position: CellPosition.nextRow(),
-        child: SizedBox(height: 8),
-      );
+    position: CellPosition.nextRow(),
+    child: SizedBox(height: 8),
+  );
 }
