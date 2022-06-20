@@ -20,19 +20,20 @@ import 'package:flutter/material.dart';
 ///  * Has a [columnGutterWidth]
 ///  * Has a [rowGutterWidth]
 ///  * A [ResponsiveLayoutFactory] that determines the position of the cells.
+///
 ///  All these can be set in the [ResponsiveLayoutGrid] constructor.
 ///
 /// The [ResponsiveLayoutGrid] has children, named cells.
 /// * Cells align with the column grid to create a logical and consistent
 ///   layout experience across screen sizes and orientations.
-/// * Cells are [Widget]s
+/// * Cells are [Widgets](https://docs.flutter.dev/development/ui/widgets-intro)
 /// * Cells can span one or more columns
 /// * Cells are separated with gutters (separation space)
 ///
 /// It is recommended to wrap a [ResponsiveLayoutGrid] in a:
 /// * [Padding] widget to add outer margins
-/// * [SingleChildScrollView] if the cells do not fit and you need
-///   vertical scrolling
+/// * [SingleChildScrollView] widget if the cells do not fit and
+///   vertical scrolling is needed.
 
 class ResponsiveLayoutGrid extends StatefulWidget {
   /// The [minimumColumnWidth] determines the number of columns that fit
@@ -84,8 +85,8 @@ class _ResponsiveLayoutGrid extends State<ResponsiveLayoutGrid> {
   }
 }
 
-/// The [ResponsiveLayoutFactory] is responsible for creating a [Layout]
-/// It orders the [children] into a Layout with a given number of columns
+/// The [ResponsiveLayoutFactory] is responsible for creating a [Layout].
+/// It orders the [children] into a Layout with a given number of columns.
 ///
 /// The [ResponsiveLayoutGrid] uses a [DefaultLayoutFactory] by default, but
 /// you could create your own [ResponsiveLayoutFactory] if you need to
@@ -97,7 +98,8 @@ abstract class ResponsiveLayoutFactory {
   );
 }
 
-/// [CellAlignment] defines how [ResponsiveLayoutCell] in a row are positioned:
+/// The [CellAlignment] can be set when a [CellPosition].nextRow is used in a
+/// [ResponsiveLayoutCell]. It can be one of the following values:
 /// * left: Align all cells on the left side of the row
 /// * right: Align all cells on the right side of the row
 /// * center: Try to align all cells in the middle of the row by
@@ -759,7 +761,7 @@ enum CellPositionType { nextColumn, nextRow }
 ///   This could be on the next row if there aren't enough empty columns
 ///   on the current row.
 /// * nextRow: The cell is to be positioned on a new row.
-///   [newRowAlignment] sets the [CellAlignment] for this new row.
+///   You can set the [CellAlignment] for every new row.
 class CellPosition {
   final CellPositionType type;
 
@@ -785,9 +787,11 @@ class CellPosition {
   int get hashCode => type.hashCode ^ newRowAlignment.hashCode;
 }
 
-/// You can wrap your cell [Widget]s with a [ResponsiveLayoutCell] when you
-/// are using the [DefaultLayoutFactory], so that you can provide the following
-/// information of the cell [Widget] (the [child]):
+/// You can wrap your cell [Widget](https://docs.flutter.dev/development/ui/widgets-intro)s
+/// with a [ResponsiveLayoutCell] when you are using the [DefaultLayoutFactory],
+/// so that you can provide the following information of the
+/// cell [Widget](https://docs.flutter.dev/development/ui/widgets-intro)
+/// (the [child]):
 /// * [CellPosition] of the cell Widget.
 /// * [ColumnSpan] of the cell Widget.
 class ResponsiveLayoutCell extends StatelessWidget {
@@ -843,7 +847,8 @@ class ColumnSpan {
   /// a lower or higher [ColumnSpan] when needed (see [min] and [max]).
   final int preferred;
 
-  /// [max] is the maximum number of columns that the [Widget] must span.
+  /// [max] is the maximum number of columns that the [ResponsiveLayoutCell]
+  /// must span.
   ///
   /// The [DefaultLayoutFactory] will use the [max] value when
   /// positioning the [ResponsiveLayoutCell], but will use a smaller value
