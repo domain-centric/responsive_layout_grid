@@ -18,7 +18,7 @@ import 'package:flutter/material.dart';
 ///  * Has a [minimumColumnWidth]
 ///  * Can have a [maxNumberOfColumns]
 ///  * Has a [columnGutterWidth]
-///  * Has a [rowGutterWidth]
+///  * Has a [rowGutterHeight]
 ///  * A [ResponsiveLayoutFactory] that determines the position of the cells.
 ///
 ///  All these can be set in the [ResponsiveLayoutGrid] constructor.

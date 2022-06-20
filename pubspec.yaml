@@ -1,5 +1,5 @@
 name: responsive_layout_grid
-description: The ResponsiveLayoutGrid is made up of columns, gutters, and margins, providing a convenient layout structure. Its child widgets align with the column grid to create a logical and consistent layout experience across screen sizes and orientations. See https://material.io/design/layout/responsive-layout-grid.html#layout-anatomy
+description: The ResponsiveLayoutGrid is made up of columns and gutters, providing a convenient layout structure for elements within the body region. As the width of the body region grows or shrinks, the number of grid columns and column widths changes in response.
 version: 1.0.0+1
 
 environment:

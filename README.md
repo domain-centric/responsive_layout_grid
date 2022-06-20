@@ -1,4 +1,4 @@
-[//]: # (This file was generated from: doc/template/README.mdt using the documentation_builder package on: 2022-06-20 21:01:14.403816.)
+[//]: # (This file was generated from: doc/template/README.mdt using the documentation_builder package on: 2022-06-20 21:09:13.773182.)
 <a id='doc-template-badges-mdt'></a>[![Pub Package](https://img.shields.io/pub/v/responsive_layout_grid)](https://pub.dev/packages/responsive_layout_grid)
 [![Code Repository](https://img.shields.io/badge/repository-git%20hub-informational)](https://github.com/domain-centric/responsive_layout_grid)
 [![Github Wiki](https://img.shields.io/badge/documentation-wiki-informational)](https://github.com/domain-centric/responsive_layout_grid/wiki)
@@ -25,7 +25,7 @@ The [ResponsiveLayoutGrid](https://github.com/domain-centric/responsive_layout_g
 * Has a [minimumColumnWidth]
 * Can have a [maxNumberOfColumns]
 * Has a [columnGutterWidth]
-* Has a [rowGutterWidth]
+* Has a [rowGutterHeight]
 *
 A [ResponsiveLayoutFactory](https://github.com/domain-centric/responsive_layout_grid/wiki/01-ResponsiveLayoutGrid#responsivelayoutfactory)
 that determines the position of the cells.
