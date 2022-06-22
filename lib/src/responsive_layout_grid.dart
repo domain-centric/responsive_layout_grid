@@ -53,13 +53,13 @@ class ResponsiveLayoutGrid extends StatefulWidget {
   final List<Widget> children;
 
   static const double defaultGutter = 16;
-  static const double defaultColumnWidth = 160;
+  static const double defaultMinimumColumnWidth = 160;
   static const DefaultLayoutFactory defaultLayoutFactory =
       DefaultLayoutFactory();
 
   const ResponsiveLayoutGrid({
     Key? key,
-    this.minimumColumnWidth = defaultColumnWidth,
+    this.minimumColumnWidth = defaultMinimumColumnWidth,
     this.columnGutterWidth = defaultGutter,
     this.rowGutterHeight = defaultGutter,
     this.maxNumberOfColumns,
@@ -76,11 +76,15 @@ class _ResponsiveLayoutGrid extends State<ResponsiveLayoutGrid> {
   Widget build(BuildContext context) {
     return LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
-      var layoutDimensions = LayoutDimensions(widget, constraints.maxWidth);
+          var layoutDimensions = LayoutDimensions(widget, constraints.maxWidth);
       var nrOfColumns = layoutDimensions.nrOfColumns;
-      var layoutFactory = widget.layoutFactory;
-      var layout = layoutFactory.create(nrOfColumns, widget.children);
-      return layout.asWidget(layoutDimensions);
+      if (layoutDimensions.columnWidth == 0) {
+        return SizedBox();
+      } else {
+        var layoutFactory = widget.layoutFactory;
+        var layout = layoutFactory.create(nrOfColumns, widget.children);
+        return layout.asWidget(layoutDimensions);
+      }
     });
   }
 }
@@ -577,7 +581,7 @@ class Layout {
 
   /// Creates a widget that represents the layout with rows and cells
   Widget asWidget(LayoutDimensions layoutDimensions) {
-    if (_cells.isEmpty) {
+    if (_cells.isEmpty || layoutDimensions.nrOfColumns == 0) {
       return _createEmptyWidget();
     } else {
       return _createWidgetWithCellsMarginsAndGutters(layoutDimensions);
@@ -712,13 +716,13 @@ class LayoutDimensions {
     rowGutterHeight = responsiveLayout.rowGutterHeight;
     nrOfColumns = _calculateNrOfColumns(responsiveLayout, availableWidth);
     marginWidth = _calculateMargin(responsiveLayout, availableWidth);
-    columnWidth = _calculateColumnsWidth(availableWidth - 2 * marginWidth);
+    columnWidth = _calculateColumnWidth(availableWidth - 2 * marginWidth);
   }
 
   int _calculateNrOfColumns(
       ResponsiveLayoutGrid responsiveLayout, double availableWidth) {
     if (availableWidth < responsiveLayout.minimumColumnWidth) {
-      return 0;
+      return 1;
     } else {
       var calculatedNrOfColumns = ((availableWidth + columnGutterWidth) /
               (responsiveLayout.minimumColumnWidth + columnGutterWidth))
@@ -731,7 +735,7 @@ class LayoutDimensions {
     }
   }
 
-  double _calculateColumnsWidth(double availableWidth) {
+  double _calculateColumnWidth(double availableWidth) {
     double totalColumnGuttersWidth = (nrOfColumns - 1) * columnGutterWidth;
     return (availableWidth - totalColumnGuttersWidth) / nrOfColumns;
   }
