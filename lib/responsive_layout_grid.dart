@@ -4,4 +4,4 @@
 
 library responsive_grid_layout;
 
-export 'responsive_layout_grid.dart';
+export 'src/responsive_layout_grid.dart';
