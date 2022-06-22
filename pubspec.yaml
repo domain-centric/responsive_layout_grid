@@ -1,7 +1,6 @@
 name: responsive_layout_grid
 description: The ResponsiveLayoutGrid provides a convenient responsive layout structure for elements within the body region.
-version: 1.0.0
-homepage: https://pub.dev/packages/responsive_layout_grid
+version: 1.0.1
 repository: https://github.com/domain-centric/responsive_layout_grid
 
 environment:

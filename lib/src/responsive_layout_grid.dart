@@ -76,10 +76,10 @@ class _ResponsiveLayoutGrid extends State<ResponsiveLayoutGrid> {
   Widget build(BuildContext context) {
     return LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
-          var layoutDimensions = LayoutDimensions(widget, constraints.maxWidth);
+      var layoutDimensions = LayoutDimensions(widget, constraints.maxWidth);
       var nrOfColumns = layoutDimensions.nrOfColumns;
       if (layoutDimensions.columnWidth == 0) {
-        return SizedBox();
+        return const SizedBox();
       } else {
         var layoutFactory = widget.layoutFactory;
         var layout = layoutFactory.create(nrOfColumns, widget.children);
