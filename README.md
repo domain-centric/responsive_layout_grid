@@ -1,4 +1,4 @@
-[//]: # (This file was generated from: doc/template/README.mdt using the documentation_builder package on: 2022-06-20 21:09:13.773182.)
+[//]: # (This file was generated from: doc/template/README.mdt using the documentation_builder package on: 2022-06-22 15:58:31.885902.)
 <a id='doc-template-badges-mdt'></a>[![Pub Package](https://img.shields.io/pub/v/responsive_layout_grid)](https://pub.dev/packages/responsive_layout_grid)
 [![Code Repository](https://img.shields.io/badge/repository-git%20hub-informational)](https://github.com/domain-centric/responsive_layout_grid)
 [![Github Wiki](https://img.shields.io/badge/documentation-wiki-informational)](https://github.com/domain-centric/responsive_layout_grid/wiki)
@@ -133,5 +133,7 @@ own [ResponsiveLayoutFactory](https://github.com/domain-centric/responsive_layou
 if you need to do something outside the box.
 
 <a id='examples'></a>
+
 # Examples
-[See the live web demo including source code](http:%5C%5CTODO)
+
+[See the live web demo including source code](https://www.google.com/search?q=TODO)
