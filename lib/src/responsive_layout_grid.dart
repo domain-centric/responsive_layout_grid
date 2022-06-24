@@ -35,7 +35,7 @@ import 'package:flutter/material.dart';
 /// * [SingleChildScrollView] widget if the cells do not fit and
 ///   vertical scrolling is needed.
 
-class ResponsiveLayoutGrid extends StatefulWidget {
+class ResponsiveLayoutGrid extends StatelessWidget {
   /// The [minimumColumnWidth] determines the number of columns that fit
   /// in the available width and is a [MaterialMeasurement]
   final double minimumColumnWidth;
@@ -68,24 +68,68 @@ class ResponsiveLayoutGrid extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<StatefulWidget> createState() => _ResponsiveLayoutGrid();
-}
-
-class _ResponsiveLayoutGrid extends State<ResponsiveLayoutGrid> {
-  @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
-      var layoutDimensions = LayoutDimensions(widget, constraints.maxWidth);
-      var nrOfColumns = layoutDimensions.nrOfColumns;
-      if (layoutDimensions.columnWidth == 0) {
-        return const SizedBox();
-      } else {
-        var layoutFactory = widget.layoutFactory;
-        var layout = layoutFactory.create(nrOfColumns, widget.children);
-        return layout.asWidget(layoutDimensions);
-      }
+      var size = Size(constraints.maxWidth, constraints.maxHeight);
+      var dimensions = LayoutDimensions(this, size);
+      var layout = _createLayout(dimensions);
+      return CustomMultiChildLayout(
+        //Solution? https://gist.github.com/jxw1102/a9b58a78a80c8e2f54233b418429fa50
+        delegate: ResponsiveLayoutGridDelegate(layout),
+        children: layout.layoutIds,
+      );
     });
+  }
+
+  Layout _createLayout(LayoutDimensions dimensions) {
+    if (dimensions.hasVisibleColumns) {
+      return layoutFactory.create(dimensions, children);
+    } else {
+      return Layout.empty();
+    }
+  }
+}
+
+/// Controls the size and position of the cells for a [ResponsiveLayoutGrid]
+class ResponsiveLayoutGridDelegate extends MultiChildLayoutDelegate {
+  final Layout layout;
+
+  ResponsiveLayoutGridDelegate(this.layout);
+
+  @override
+  void performLayout(Size size) {
+    double y = 0;
+    var dimensions = layout.dimensions;
+
+    for (var row in layout._rows) {
+      if (y > 0) {
+        y += dimensions.rowGutterHeight;
+      }
+      double highestCell = 0;
+      for (var cell in row.cells) {
+        var constraints = _constraints(dimensions, cell);
+        var cellSize = layoutChild(cell, constraints);
+        highestCell = max(highestCell, cellSize.height);
+        positionChild(cell, dimensions.cellOffSet(cell, y));
+      }
+      y += highestCell;
+    }
+  }
+
+  @override
+  bool shouldRelayout(covariant MultiChildLayoutDelegate oldDelegate) =>
+      true; //TODO see if we can optimize this later
+
+  _constraints(LayoutDimensions dimensions, LayoutCell cell) {
+    var cellWidth = cell.columnSpan * dimensions.columnWidth +
+        (cell.columnSpan - 1) * dimensions.columnGutterWidth;
+    return BoxConstraints(
+      //TODO can minWidth be 0?
+      //TODO height???
+      minWidth: cellWidth,
+      maxWidth: cellWidth,
+    );
   }
 }
 
@@ -97,7 +141,7 @@ class _ResponsiveLayoutGrid extends State<ResponsiveLayoutGrid> {
 /// do something outside the box.
 abstract class ResponsiveLayoutFactory {
   Layout create(
-    int numberOfColumns,
+    LayoutDimensions layoutDimensions,
     List<Widget> children,
   );
 }
@@ -132,12 +176,12 @@ class DefaultLayoutFactory implements ResponsiveLayoutFactory {
 
   @override
   Layout create(
-    int numberOfColumns,
+    LayoutDimensions layoutDimensions,
     List<Widget> children,
   ) {
     var cellAlignment = CellAlignment.left;
     List<TempRow> rows = [];
-    var row = TempRow(numberOfColumns, cellAlignment);
+    var row = TempRow(layoutDimensions.numberOfColumns, cellAlignment);
     rows.add(row);
 
     for (var cell in _cells(children)) {
@@ -145,13 +189,13 @@ class DefaultLayoutFactory implements ResponsiveLayoutFactory {
         if (cell.position.type == CellPositionType.nextRow) {
           cellAlignment = cell.position.newRowAlignment!;
         }
-        row = TempRow(numberOfColumns, cellAlignment);
+        row = TempRow(layoutDimensions.numberOfColumns, cellAlignment);
         rows.add(row);
       }
       row.add(cell);
     }
 
-    return _rowsToLayout(rows, numberOfColumns);
+    return _rowsToLayout(layoutDimensions, rows);
   }
 
   bool _startOnNewRow(
@@ -171,9 +215,9 @@ class DefaultLayoutFactory implements ResponsiveLayoutFactory {
     return responsiveLayoutCells;
   }
 
-  Layout _rowsToLayout(List<TempRow> rows, int numberOfColumns) {
+  Layout _rowsToLayout(LayoutDimensions layoutDimensions, List<TempRow> rows) {
     var rowNr = Layout.firstRow;
-    var layout = Layout(numberOfColumns);
+    var layout = Layout(layoutDimensions);
 
     for (var row in rows) {
       if (row.isNotEmpty) {
@@ -487,13 +531,13 @@ class LayoutCell {
   final int columnSpan;
 
   /// Contains all information on how to display the cell
-  final Widget cell;
+  final Widget widget;
 
-  LayoutCell({
+  const LayoutCell({
     required this.leftColumn,
     required this.columnSpan,
     required this.row,
-    required this.cell,
+    required this.widget,
   }) : rightColumn = leftColumn + columnSpan - 1;
 
   /// Creates a widget that represents a cell with width constrains
@@ -502,15 +546,17 @@ class LayoutCell {
         (columnSpan - 1) * layoutDimensions.columnGutterWidth;
     return Container(
       constraints: BoxConstraints(minWidth: width, maxWidth: width),
-      child: cell is ResponsiveLayoutCell
-          ? (cell as ResponsiveLayoutCell).child
-          : cell,
+      child: widget is ResponsiveLayoutCell
+          ? (widget as ResponsiveLayoutCell).child
+          : widget,
     );
   }
 
   /// returns true is this [LayoutCell] is located on given row and column
   bool occupies({required int column, required int row}) =>
       row == this.row && column >= leftColumn && column <= rightColumn;
+
+  LayoutId get layoutId => LayoutId(id: this, child: widget);
 }
 
 ///TODO remove when ResponsiveLayoutGrid uses CustomMultiChildLayout with MultiChildLayoutDelegate,
@@ -550,9 +596,11 @@ class Layout {
   static const int firstRow = 1;
   static const int firstColumn = 1;
 
-  final int numberOfColumns;
+  final LayoutDimensions dimensions;
 
-  Layout(this.numberOfColumns);
+  Layout(this.dimensions);
+
+  Layout.empty() : this(LayoutDimensions.empty());
 
   final List<LayoutCell> _cells = [];
 
@@ -565,6 +613,12 @@ class Layout {
     }
   }
 
+  bool get cellsAreVisible =>
+      _cells.isNotEmpty && dimensions.numberOfColumns > 0;
+
+  /// returns cells as [LayoutId]s for the [CustomMultiChildLayout]
+  List<LayoutId> get layoutIds => _cells.map((cell) => cell.layoutId).toList();
+
   addCell({
     required int leftColumn,
     required int columnSpan,
@@ -572,60 +626,28 @@ class Layout {
     required Widget cell,
   }) {
     var layoutCell = LayoutCell(
-        row: row, leftColumn: leftColumn, columnSpan: columnSpan, cell: cell);
+        row: row, leftColumn: leftColumn, columnSpan: columnSpan, widget: cell);
     _verifyLeftColumn(leftColumn);
     _verifyColumnSpan(leftColumn, columnSpan);
     _verifyIfPositionIsFree(layoutCell);
     _cells.add(layoutCell);
   }
 
-  /// Creates a widget that represents the layout with rows and cells
-  Widget asWidget(LayoutDimensions layoutDimensions) {
-    if (_cells.isEmpty || layoutDimensions.nrOfColumns == 0) {
-      return _createEmptyWidget();
-    } else {
-      return _createWidgetWithCellsMarginsAndGutters(layoutDimensions);
-    }
-  }
-
-  Widget _createEmptyWidget() => const SizedBox();
-
-  Widget _createWidgetWithCellsMarginsAndGutters(
-      LayoutDimensions layoutDimensions) {
-    var rows = _rows;
-    if (rows.length == 1) {
-      return rows.first.asWidget(layoutDimensions);
-    }
-
-    List<Widget> widgets = [];
-    for (var row in rows) {
-      if (row.cells.isNotEmpty) {
-        if (widgets.isNotEmpty) {
-          widgets.add(_createRowGutter(layoutDimensions));
-        }
-        widgets.add(row.asWidget(layoutDimensions));
-      }
-    }
-    return Column(children: widgets);
-  }
-
-  Widget _createRowGutter(LayoutDimensions layoutDimensions) =>
-      SizedBox(height: layoutDimensions.rowGutterHeight);
-
   void _verifyLeftColumn(int leftColumn) {
     if (leftColumn <= 0) {
       throw ArgumentError('Must be > 0', 'leftColumn');
     }
-    if (leftColumn > numberOfColumns) {
+    if (leftColumn > dimensions.numberOfColumns) {
       throw ArgumentError(
-          'Must be < numberOfColumns: $numberOfColumns', 'leftColumn');
+          'Must be < numberOfColumns: ${dimensions.numberOfColumns}',
+          'leftColumn');
     }
   }
 
   void _verifyColumnSpan(int leftColumn, int columnSpan) {
-    if (leftColumn + columnSpan - 1 > numberOfColumns) {
+    if (leftColumn + columnSpan - 1 > dimensions.numberOfColumns) {
       throw ArgumentError(
-          'leftColumn + columnSpan -1 may not exceed numberOfColumns: $numberOfColumns',
+          'leftColumn + columnSpan -1 may not exceed numberOfColumns: ${dimensions.numberOfColumns}',
           'columnSpan');
     }
   }
@@ -671,7 +693,7 @@ class Layout {
   int availableColumnsLeft(int row) {
     var cellsInRow = _cellsInRowLeftToRight(row);
     if (cellsInRow.isEmpty) {
-      return numberOfColumns;
+      return dimensions.numberOfColumns;
     } else {
       return cellsInRow.first.leftColumn - 1;
     }
@@ -680,9 +702,9 @@ class Layout {
   int availableColumnsRight(int row) {
     var cellsInRow = _cellsInRowLeftToRight(row);
     if (cellsInRow.isEmpty) {
-      return numberOfColumns;
+      return dimensions.numberOfColumns;
     } else {
-      return numberOfColumns - cellsInRow.last.rightColumn;
+      return dimensions.numberOfColumns - cellsInRow.last.rightColumn;
     }
   }
 
@@ -692,13 +714,11 @@ class Layout {
           : availableColumnsRight(row);
 }
 
-// enum CellDirection { leftToRight, rightToLeft }
-
-/// Contains all information to build a [ResponsiveLayoutGrid]
-/// It calculates the number of columns and width of these columns
-/// in the available with in the [ResponsiveLayoutGrid]
 class LayoutDimensions {
-  late int nrOfColumns;
+  /// Contains all information to build a [ResponsiveLayoutGrid]
+  /// It calculates the number of columns and width of these columns
+  /// in the available with in the [ResponsiveLayoutGrid]class LayoutDimensions {
+  late int numberOfColumns;
   late double columnWidth;
 
   /// the space between columns as [MaterialMeasurement]
@@ -710,14 +730,24 @@ class LayoutDimensions {
   /// the space left and right of the columns as [MaterialMeasurement]
   late double marginWidth;
 
-  LayoutDimensions(
-      ResponsiveLayoutGrid responsiveLayout, double availableWidth) {
+  late bool hasVisibleColumns;
+
+  LayoutDimensions(ResponsiveLayoutGrid responsiveLayout, Size size) {
     columnGutterWidth = responsiveLayout.columnGutterWidth;
     rowGutterHeight = responsiveLayout.rowGutterHeight;
-    nrOfColumns = _calculateNrOfColumns(responsiveLayout, availableWidth);
-    marginWidth = _calculateMargin(responsiveLayout, availableWidth);
-    columnWidth = _calculateColumnWidth(availableWidth - 2 * marginWidth);
+    numberOfColumns = _calculateNrOfColumns(responsiveLayout, size.width);
+    marginWidth = _calculateMargin(responsiveLayout, size.width);
+    columnWidth = _calculateColumnWidth(size.width - 2 * marginWidth);
+    hasVisibleColumns = numberOfColumns > 0 && columnWidth > 0;
   }
+
+  LayoutDimensions.empty()
+      : columnGutterWidth = 0,
+        rowGutterHeight = 0,
+        numberOfColumns = 0,
+        marginWidth = 0,
+        columnWidth = 0,
+        hasVisibleColumns = false;
 
   int _calculateNrOfColumns(
       ResponsiveLayoutGrid responsiveLayout, double availableWidth) {
@@ -736,8 +766,8 @@ class LayoutDimensions {
   }
 
   double _calculateColumnWidth(double availableWidth) {
-    double totalColumnGuttersWidth = (nrOfColumns - 1) * columnGutterWidth;
-    return (availableWidth - totalColumnGuttersWidth) / nrOfColumns;
+    double totalColumnGuttersWidth = (numberOfColumns - 1) * columnGutterWidth;
+    return (availableWidth - totalColumnGuttersWidth) / numberOfColumns;
   }
 
   double _calculateMargin(
@@ -745,16 +775,23 @@ class LayoutDimensions {
     if (responsiveLayout.maxNumberOfColumns == null) {
       return 0;
     }
-    if (nrOfColumns < responsiveLayout.maxNumberOfColumns!) {
+    if (numberOfColumns < responsiveLayout.maxNumberOfColumns!) {
       return 0;
     }
-    var maxWidth = (nrOfColumns + 1) * responsiveLayout.minimumColumnWidth +
-        nrOfColumns * responsiveLayout.columnGutterWidth;
+    var maxWidth = (numberOfColumns + 1) * responsiveLayout.minimumColumnWidth +
+        numberOfColumns * responsiveLayout.columnGutterWidth;
     if (availableWidth < maxWidth) {
       return 0;
     } else {
       return (availableWidth - maxWidth) / 2;
     }
+  }
+
+  Offset cellOffSet(LayoutCell cell, double y) {
+    var precedingColumnWidths = (cell.leftColumn - 1) * columnWidth;
+    var precedingColumnGutters = (cell.leftColumn - 1) * columnGutterWidth;
+    var x = marginWidth + precedingColumnWidths + precedingColumnGutters;
+    return Offset(x, y);
   }
 }
 
