@@ -1,4 +1,4 @@
-[//]: # (This file was generated from: doc/template/README.mdt using the documentation_builder package on: 2022-06-22 20:41:08.318591.)
+[//]: # (This file was generated from: doc/template/README.mdt using the documentation_builder package on: 2022-06-28 13:11:41.643725.)
 <a id='doc-template-badges-mdt'></a>[![Pub Package](https://img.shields.io/pub/v/responsive_layout_grid)](https://pub.dev/packages/responsive_layout_grid)
 [![Code Repository](https://img.shields.io/badge/repository-git%20hub-informational)](https://github.com/domain-centric/responsive_layout_grid)
 [![Github Wiki](https://img.shields.io/badge/documentation-wiki-informational)](https://github.com/domain-centric/responsive_layout_grid/wiki)
@@ -135,4 +135,4 @@ if you need to do something outside the box.
 <a id='examples'></a>
 # Examples
 
-[See the live web demo including source code](https://domain-centric.github.io/responsive_layout_grid_demo)
+[See the live web demo including source code](https://domain-centric.github.io/responsive_layout_grid_demo_web)

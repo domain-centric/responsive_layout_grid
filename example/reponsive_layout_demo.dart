@@ -55,7 +55,7 @@ class AlignmentExamplePage extends StatelessWidget {
 
     cells.add(_createGroupBar(cellAlignment, text, color));
 
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < 10; i++) {
       var min = 1;
       var preferred = min + randomInt(min: 0, max: 3);
       var max = preferred + randomInt(min: 0, max: 3);
@@ -65,7 +65,11 @@ class AlignmentExamplePage extends StatelessWidget {
   }
 
   ResponsiveLayoutCell _createCell(
-      int min, int preferred, int max, MaterialColor color) {
+    int min,
+    int preferred,
+    int max,
+    MaterialColor color,
+  ) {
     return ResponsiveLayoutCell(
       position: const CellPosition.nextColumn(),
       columnSpan: ColumnSpan.range(min: min, preferred: preferred, max: max),

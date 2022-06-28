@@ -73,13 +73,10 @@ class ResponsiveLayoutGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
-          var size = Size(constraints.maxWidth, constraints.maxHeight);
+      var size = Size(constraints.maxWidth, constraints.maxHeight);
       var dimensions = LayoutDimensions(this, size);
       var layout = _createLayout(dimensions);
-      return RenderResponsiveLayout(
-          layoutCells:
-              layout._cells //TODO make sure that _cells are ordered by row
-          );
+      return RenderResponsiveLayout(layoutCells: layout.cellsOrderedByRow);
     });
   }
 
@@ -91,7 +88,6 @@ class ResponsiveLayoutGrid extends StatelessWidget {
     }
   }
 }
-
 
 /// The [ResponsiveLayoutFactory] is responsible for creating a [Layout].
 /// It orders the [children] into a Layout with a given number of columns.
@@ -575,6 +571,11 @@ class Layout {
   bool get cellsAreVisible =>
       _cells.isNotEmpty && dimensions.numberOfColumns > 0;
 
+  get cellsOrderedByRow {
+    _cells.sort((a, b) => a.row.compareTo(b.row));
+    return _cells;
+  }
+
   addCell({
     required int leftColumn,
     required int columnSpan,
@@ -640,7 +641,6 @@ class Layout {
         .sort((cell1, cell2) => cell1.leftColumn.compareTo(cell2.leftColumn));
     return cellsInRow;
   }
-
 
   int availableColumnsLeft(int row) {
     var cellsInRow = _cellsInRowLeftToRight(row);

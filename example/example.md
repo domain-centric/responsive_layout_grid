@@ -1,2 +1,2 @@
-[//]: # (This file was generated from: doc/template/example.mdt using the documentation_builder package on: 2022-06-22 20:41:08.316978.)
-[See the live web demo including source code](https://domain-centric.github.io/responsive_layout_grid_demo)
+[//]: # (This file was generated from: doc/template/example.mdt using the documentation_builder package on: 2022-06-28 13:11:41.641997.)
+[See the live web demo including source code](https://domain-centric.github.io/responsive_layout_grid_demo_web)
