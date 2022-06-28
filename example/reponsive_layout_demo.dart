@@ -32,33 +32,30 @@ class AlignmentExamplePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(
-          title: const Text('$title Example (resize me!)'),
-        ),
-        body: //SingleChildScrollView(
-            //child:
-            Padding(
-                padding: const EdgeInsets.all(8),
-                child: ResponsiveLayoutGrid(
-                  maxNumberOfColumns: 6,
-                  children: [
-                    ..._createCells(
-                        'right', CellAlignment.right, Colors.yellow),
-                    ..._createCells('left', CellAlignment.left, Colors.green),
-                    ..._createCells(
-                        'center', CellAlignment.center, Colors.orange),
-                    ..._createCells(
-                        'justify', CellAlignment.justify, Colors.blue),
-                  ],
-                )),
-      );
+      appBar: AppBar(
+        title: const Text('$title Example (resize me!)'),
+      ),
+      body: SingleChildScrollView(
+        child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: ResponsiveLayoutGrid(
+              maxNumberOfColumns: 6,
+              children: [
+                ..._createCells('right', CellAlignment.right, Colors.yellow),
+                ..._createCells('left', CellAlignment.left, Colors.green),
+                ..._createCells('center', CellAlignment.center, Colors.orange),
+                ..._createCells('justify', CellAlignment.justify, Colors.blue),
+              ],
+            )),
+      ));
 
   List<ResponsiveLayoutCell> _createCells(
       String text, CellAlignment cellAlignment, MaterialColor color) {
     List<ResponsiveLayoutCell> cells = [];
+
     cells.add(_createGroupBar(cellAlignment, text, color));
 
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 5; i++) {
       var min = 1;
       var preferred = min + randomInt(min: 0, max: 3);
       var max = preferred + randomInt(min: 0, max: 3);

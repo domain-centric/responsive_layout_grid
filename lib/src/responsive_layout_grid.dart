@@ -4,7 +4,9 @@
 
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 
 /// Creates a [Responsive Layout Grid as defined in the Material design guidelines](https://m3.material.io/foundations/adaptive-design/large-screens)
 ///
@@ -71,14 +73,13 @@ class ResponsiveLayoutGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
-      var size = Size(constraints.maxWidth, constraints.maxHeight);
+          var size = Size(constraints.maxWidth, constraints.maxHeight);
       var dimensions = LayoutDimensions(this, size);
       var layout = _createLayout(dimensions);
-      return CustomMultiChildLayout(
-        //Solution? https://gist.github.com/jxw1102/a9b58a78a80c8e2f54233b418429fa50
-        delegate: ResponsiveLayoutGridDelegate(layout),
-        children: layout.layoutIds,
-      );
+      return RenderResponsiveLayout(
+          layoutCells:
+              layout._cells //TODO make sure that _cells are ordered by row
+          );
     });
   }
 
@@ -91,47 +92,6 @@ class ResponsiveLayoutGrid extends StatelessWidget {
   }
 }
 
-/// Controls the size and position of the cells for a [ResponsiveLayoutGrid]
-class ResponsiveLayoutGridDelegate extends MultiChildLayoutDelegate {
-  final Layout layout;
-
-  ResponsiveLayoutGridDelegate(this.layout);
-
-  @override
-  void performLayout(Size size) {
-    double y = 0;
-    var dimensions = layout.dimensions;
-
-    for (var row in layout._rows) {
-      if (y > 0) {
-        y += dimensions.rowGutterHeight;
-      }
-      double highestCell = 0;
-      for (var cell in row.cells) {
-        var constraints = _constraints(dimensions, cell);
-        var cellSize = layoutChild(cell, constraints);
-        highestCell = max(highestCell, cellSize.height);
-        positionChild(cell, dimensions.cellOffSet(cell, y));
-      }
-      y += highestCell;
-    }
-  }
-
-  @override
-  bool shouldRelayout(covariant MultiChildLayoutDelegate oldDelegate) =>
-      true; //TODO see if we can optimize this later
-
-  _constraints(LayoutDimensions dimensions, LayoutCell cell) {
-    var cellWidth = cell.columnSpan * dimensions.columnWidth +
-        (cell.columnSpan - 1) * dimensions.columnGutterWidth;
-    return BoxConstraints(
-      //TODO can minWidth be 0?
-      //TODO height???
-      minWidth: cellWidth,
-      maxWidth: cellWidth,
-    );
-  }
-}
 
 /// The [ResponsiveLayoutFactory] is responsible for creating a [Layout].
 /// It orders the [children] into a Layout with a given number of columns.
@@ -180,8 +140,8 @@ class DefaultLayoutFactory implements ResponsiveLayoutFactory {
     List<Widget> children,
   ) {
     var cellAlignment = CellAlignment.left;
-    List<TempRow> rows = [];
-    var row = TempRow(layoutDimensions.numberOfColumns, cellAlignment);
+    List<LayoutRow> rows = [];
+    var row = LayoutRow(layoutDimensions.numberOfColumns, cellAlignment);
     rows.add(row);
 
     for (var cell in _cells(children)) {
@@ -189,7 +149,7 @@ class DefaultLayoutFactory implements ResponsiveLayoutFactory {
         if (cell.position.type == CellPositionType.nextRow) {
           cellAlignment = cell.position.newRowAlignment!;
         }
-        row = TempRow(layoutDimensions.numberOfColumns, cellAlignment);
+        row = LayoutRow(layoutDimensions.numberOfColumns, cellAlignment);
         rows.add(row);
       }
       row.add(cell);
@@ -200,7 +160,7 @@ class DefaultLayoutFactory implements ResponsiveLayoutFactory {
 
   bool _startOnNewRow(
     ResponsiveLayoutCell cell,
-    TempRow row,
+    LayoutRow row,
   ) =>
       cell.position.type == CellPositionType.nextRow || !row.canAddCell(cell);
 
@@ -215,7 +175,8 @@ class DefaultLayoutFactory implements ResponsiveLayoutFactory {
     return responsiveLayoutCells;
   }
 
-  Layout _rowsToLayout(LayoutDimensions layoutDimensions, List<TempRow> rows) {
+  Layout _rowsToLayout(
+      LayoutDimensions layoutDimensions, List<LayoutRow> rows) {
     var rowNr = Layout.firstRow;
     var layout = Layout(layoutDimensions);
 
@@ -229,10 +190,9 @@ class DefaultLayoutFactory implements ResponsiveLayoutFactory {
   }
 }
 
-/// holds [ResponsiveLayoutCell]s that belong to the same row but do not have a
+/// Holds [ResponsiveLayoutCell]s that belong to the same row but do not have a
 /// final position or column span
-//TODO rename when ResponsiveLayoutGrid uses CustomMultiChildLayout with MultiChildLayoutDelegate,
-class TempRow {
+class LayoutRow {
   final int totalColumns;
   final CellAlignment cellAlignment;
 
@@ -243,7 +203,7 @@ class TempRow {
   /// _cellsColumnSpans[index] is the column span of cells[index]
   List<int> _cellColumnSpans = [];
 
-  TempRow(
+  LayoutRow(
     this.totalColumns,
     this.cellAlignment,
   );
@@ -334,22 +294,9 @@ class TempRow {
     return fits & (scoreWithoutNewCell <= scoreWithNewCell);
   }
 
-  /// Adds this [TempRow] to a [Layout]
+  /// Adds this [LayoutRow] to a [Layout]
   void addToLayout(int rowNr, Layout layout) {
-    // TODO when ResponsiveLayoutGrid uses CustomMultiChildLayout with MultiChildLayoutDelegate replace with: var columnNr = Layout.firstColumn+ _alignmentSpan;
-    var columnNr = Layout.firstColumn;
-
-    ///TODO when ResponsiveLayoutGrid uses CustomMultiChildLayout with MultiChildLayoutDelegate, remove:
-    var alignmentSpan = _alignmentSpan;
-    if (alignmentSpan > 0) {
-      // Start with alignment cell
-      layout.addCell(
-          leftColumn: columnNr,
-          columnSpan: alignmentSpan,
-          row: rowNr,
-          cell: const SizedBox());
-      columnNr += alignmentSpan;
-    }
+    var columnNr = Layout.firstColumn + _alignmentSpan;
 
     for (int i = 0; i < _cells.length; i++) {
       var cell = _cells[i];
@@ -514,14 +461,44 @@ class TempRow {
   }
 }
 
-class LayoutCell {
+class LayoutCellParentData extends ContainerBoxParentData<RenderBox> {
+  /// column number where the left of the cell starts in the layout
+  /// [Layout.firstColumn]=first column
+  int? leftColumn;
+
+  /// column number where the right of the cell ends in the layout
+  /// [Layout.firstColumn]=first column
+  int? rightColumn;
+
+  /// row number where the top of the cell starts in the layout
+  /// [Layout.firstRow]=first row
+  int? row;
+
+  /// Numbers of columns that the cell spans
+  int? columnSpan;
+
+  LayoutDimensions? dimensions;
+}
+
+class LayoutCell extends ParentDataWidget<LayoutCellParentData> {
+  const LayoutCell({
+    Key? key,
+    required this.dimensions,
+    required this.leftColumn,
+    required this.columnSpan,
+    required this.row,
+    required Widget child,
+  }) : super(key: key, child: child);
+
+  final LayoutDimensions dimensions;
+
   /// column number where the left of the cell starts in the layout
   /// [Layout.firstColumn]=first column
   final int leftColumn;
 
   /// column number where the right of the cell ends in the layout
   /// [Layout.firstColumn]=first column
-  final int rightColumn;
+  int get rightColumn => leftColumn + columnSpan - 1;
 
   /// row number where the top of the cell starts in the layout
   /// [Layout.firstRow]=first row
@@ -530,65 +507,47 @@ class LayoutCell {
   /// Numbers of columns that the cell spans
   final int columnSpan;
 
-  /// Contains all information on how to display the cell
-  final Widget widget;
-
-  const LayoutCell({
-    required this.leftColumn,
-    required this.columnSpan,
-    required this.row,
-    required this.widget,
-  }) : rightColumn = leftColumn + columnSpan - 1;
-
-  /// Creates a widget that represents a cell with width constrains
-  Widget asWidget(LayoutDimensions layoutDimensions) {
-    var width = columnSpan * layoutDimensions.columnWidth +
-        (columnSpan - 1) * layoutDimensions.columnGutterWidth;
-    return Container(
-      constraints: BoxConstraints(minWidth: width, maxWidth: width),
-      child: widget is ResponsiveLayoutCell
-          ? (widget as ResponsiveLayoutCell).child
-          : widget,
-    );
-  }
-
   /// returns true is this [LayoutCell] is located on given row and column
   bool occupies({required int column, required int row}) =>
       row == this.row && column >= leftColumn && column <= rightColumn;
 
-  LayoutId get layoutId => LayoutId(id: this, child: widget);
-}
+  @override
+  void applyParentData(RenderObject renderObject) {
+    assert(renderObject.parentData is LayoutCellParentData);
+    final LayoutCellParentData parentData =
+        renderObject.parentData! as LayoutCellParentData;
+    bool needsLayout = false;
 
-///TODO remove when ResponsiveLayoutGrid uses CustomMultiChildLayout with MultiChildLayoutDelegate,
-class LayoutRow {
-  /// [LayoutCell]s from left to right
-  final List<LayoutCell> cells;
+    if (parentData.dimensions != dimensions) {
+      parentData.dimensions = dimensions;
+      needsLayout = true;
+    }
 
-  LayoutRow(this.cells);
+    if (parentData.leftColumn != leftColumn) {
+      parentData.leftColumn = leftColumn;
+      needsLayout = true;
+    }
 
-  /// Creates a widget that represents a row: margin, cells, margin
-  Widget asWidget(LayoutDimensions layoutDimensions) {
-    List<Widget> widgets = [];
+    if (parentData.row != row) {
+      parentData.row = row;
+      needsLayout = true;
+    }
 
-    for (var cell in cells) {
-      if (widgets.isNotEmpty) {
-        widgets.add(_createColumnGutter(layoutDimensions.columnGutterWidth));
+    if (parentData.columnSpan != columnSpan) {
+      parentData.columnSpan = columnSpan;
+      needsLayout = true;
+    }
+
+    if (needsLayout) {
+      final AbstractNode? targetParent = renderObject.parent;
+      if (targetParent is RenderObject) {
+        targetParent.markNeedsLayout();
       }
-      widgets.add(cell.asWidget(layoutDimensions));
     }
-
-    var marginWidth = layoutDimensions.marginWidth;
-    if (marginWidth > 0) {
-      widgets.insert(0, _createMargin(marginWidth));
-      widgets.add(_createMargin(marginWidth));
-    }
-
-    return Row(children: widgets);
   }
 
-  Widget _createMargin(double width) => SizedBox(width: width);
-
-  Widget _createColumnGutter(double width) => SizedBox(width: width);
+  @override
+  Type get debugTypicalAncestorWidgetClass => Stack;
 }
 
 /// Contains the cells without margins and gutters
@@ -616,9 +575,6 @@ class Layout {
   bool get cellsAreVisible =>
       _cells.isNotEmpty && dimensions.numberOfColumns > 0;
 
-  /// returns cells as [LayoutId]s for the [CustomMultiChildLayout]
-  List<LayoutId> get layoutIds => _cells.map((cell) => cell.layoutId).toList();
-
   addCell({
     required int leftColumn,
     required int columnSpan,
@@ -626,7 +582,12 @@ class Layout {
     required Widget cell,
   }) {
     var layoutCell = LayoutCell(
-        row: row, leftColumn: leftColumn, columnSpan: columnSpan, widget: cell);
+      dimensions: dimensions,
+      row: row,
+      leftColumn: leftColumn,
+      columnSpan: columnSpan,
+      child: cell,
+    );
     _verifyLeftColumn(leftColumn);
     _verifyColumnSpan(leftColumn, columnSpan);
     _verifyIfPositionIsFree(layoutCell);
@@ -673,8 +634,6 @@ class Layout {
     return rowNrs;
   }
 
-  LayoutRow _row(int row) => LayoutRow(_cellsInRowLeftToRight(row));
-
   List<LayoutCell> _cellsInRowLeftToRight(int row) {
     var cellsInRow = _cells.where((cell) => cell.row == row).toList();
     cellsInRow
@@ -682,13 +641,6 @@ class Layout {
     return cellsInRow;
   }
 
-  List<LayoutRow> get _rows {
-    List<LayoutRow> rows = [];
-    for (int rowNr in _rowNrs) {
-      rows.add(_row(rowNr));
-    }
-    return rows;
-  }
 
   int availableColumnsLeft(int row) {
     var cellsInRow = _cellsInRowLeftToRight(row);
@@ -714,10 +666,10 @@ class Layout {
           : availableColumnsRight(row);
 }
 
+/// Contains all the dimensions needed to layout a [ResponsiveLayoutGrid]
+/// It calculates the number of columns and width of these columns
+/// in the available with in the [ResponsiveLayoutGrid]
 class LayoutDimensions {
-  /// Contains all information to build a [ResponsiveLayoutGrid]
-  /// It calculates the number of columns and width of these columns
-  /// in the available with in the [ResponsiveLayoutGrid]class LayoutDimensions {
   late int numberOfColumns;
   late double columnWidth;
 
@@ -787,12 +739,33 @@ class LayoutDimensions {
     }
   }
 
-  Offset cellOffSet(LayoutCell cell, double y) {
-    var precedingColumnWidths = (cell.leftColumn - 1) * columnWidth;
-    var precedingColumnGutters = (cell.leftColumn - 1) * columnGutterWidth;
+  Offset cellOffSet(int cellLeftColumn, double y) {
+    var precedingColumnWidths = (cellLeftColumn - 1) * columnWidth;
+    var precedingColumnGutters = (cellLeftColumn - 1) * columnGutterWidth;
     var x = marginWidth + precedingColumnWidths + precedingColumnGutters;
     return Offset(x, y);
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is LayoutDimensions &&
+          runtimeType == other.runtimeType &&
+          numberOfColumns == other.numberOfColumns &&
+          columnWidth == other.columnWidth &&
+          columnGutterWidth == other.columnGutterWidth &&
+          rowGutterHeight == other.rowGutterHeight &&
+          marginWidth == other.marginWidth &&
+          hasVisibleColumns == other.hasVisibleColumns;
+
+  @override
+  int get hashCode =>
+      numberOfColumns.hashCode ^
+      columnWidth.hashCode ^
+      columnGutterWidth.hashCode ^
+      rowGutterHeight.hashCode ^
+      marginWidth.hashCode ^
+      hasVisibleColumns.hashCode;
 }
 
 enum CellPositionType { nextColumn, nextRow }
@@ -949,6 +922,138 @@ class ColumnSpan {
   }
 }
 
+/// Renders the [ResponsiveLayoutGrid]
+class RenderResponsiveLayout extends MultiChildRenderObjectWidget {
+  RenderResponsiveLayout({
+    Key? key,
+    List<LayoutCell> layoutCells = const [],
+  }) : super(key: key, children: layoutCells);
+
+  @override
+  RenderResponsiveLayoutBox createRenderObject(BuildContext context) {
+    return RenderResponsiveLayoutBox();
+  }
+}
+
+/// [RenderBox] for [RenderResponsiveLayout].
+/// It does all the positioning of the [LayoutCells]
+class RenderResponsiveLayoutBox extends RenderBox
+    with
+        ContainerRenderObjectMixin<RenderBox, LayoutCellParentData>,
+        RenderBoxContainerDefaultsMixin<RenderBox, LayoutCellParentData> {
+  RenderResponsiveLayoutBox({
+    List<RenderBox> children = const [],
+  }) {
+    addAll(children);
+  }
+
+  @override
+  void setupParentData(RenderBox child) {
+    if (child.parentData is! LayoutCellParentData) {
+      child.parentData = LayoutCellParentData();
+    }
+  }
+
+  /// Helper function for calculating the intrinsics metrics of a Stack.
+  static double getIntrinsicDimension(RenderBox? firstChild,
+      double Function(RenderBox child) mainChildSizeGetter) {
+    double extent = 0.0;
+    RenderBox? child = firstChild;
+    while (child != null) {
+      final StackParentData childParentData =
+          child.parentData! as StackParentData;
+      if (!childParentData.isPositioned) {
+        extent = max(extent, mainChildSizeGetter(child));
+      }
+      assert(child.parentData == childParentData);
+      child = childParentData.nextSibling;
+    }
+    return extent;
+  }
+
+  @override
+  double computeMinIntrinsicWidth(double height) {
+    return getIntrinsicDimension(
+        firstChild, (RenderBox child) => child.getMinIntrinsicWidth(height));
+  }
+
+  @override
+  double computeMaxIntrinsicWidth(double height) {
+    return getIntrinsicDimension(
+        firstChild, (RenderBox child) => child.getMaxIntrinsicWidth(height));
+  }
+
+  @override
+  double computeMinIntrinsicHeight(double width) {
+    return getIntrinsicDimension(
+        firstChild, (RenderBox child) => child.getMinIntrinsicHeight(width));
+  }
+
+  @override
+  double computeMaxIntrinsicHeight(double width) {
+    return getIntrinsicDimension(
+        firstChild, (RenderBox child) => child.getMaxIntrinsicHeight(width));
+  }
+
+  @override
+  void performLayout() {
+    if (childCount == 0) {
+      size = constraints.biggest;
+      assert(size.isFinite);
+      return;
+    }
+
+    double y = 0;
+    int rowNrOfPreviousCell = 0;
+
+    RenderBox? child = firstChild;
+    double highestCell = 0;
+    while (child != null) {
+      final LayoutCellParentData childParentData =
+          child.parentData as LayoutCellParentData;
+
+      final dimensions = childParentData.dimensions!;
+
+      if (childParentData.row != rowNrOfPreviousCell) {
+        //new row
+        rowNrOfPreviousCell = childParentData.row!;
+        if (highestCell > 0) {
+          y += dimensions.rowGutterHeight;
+        }
+        y += highestCell;
+        highestCell = 0;
+      }
+
+      var cellWidth = _cellWidth(childParentData, dimensions);
+      child.layout(BoxConstraints(minWidth: cellWidth, maxWidth: cellWidth),
+          parentUsesSize: true);
+      childParentData.offset =
+          dimensions.cellOffSet(childParentData.leftColumn!, y);
+      highestCell = max(highestCell, child.size.height);
+
+      child = childParentData.nextSibling;
+    }
+
+    size = Size(constraints.biggest.width, y + highestCell);
+  }
+
+  double _cellWidth(
+      LayoutCellParentData childParentData, LayoutDimensions dimensions) {
+    return childParentData.columnSpan! * dimensions.columnWidth +
+        (childParentData.columnSpan! - 1) * dimensions.columnGutterWidth;
+  }
+
+  @override
+  void paint(PaintingContext context, Offset offset) {
+    defaultPaint(context, offset);
+  }
+
+  @override
+  bool hitTestChildren(BoxHitTestResult result, {required Offset position}) {
+    return defaultHitTestChildren(result, position: position);
+  }
+}
+
 /// Distances in flutter are in
 /// [Density-independent Pixels](https://en.wikipedia.org/wiki/Device-independent_pixel)
 ///
@@ -959,5 +1064,5 @@ class ColumnSpan {
 /// rhythm across each screen.
 ///
 /// Smaller elements, such as icons, can align to a 4dp grid, while typography
-/// can fall on a 4dp baseline grid. This allows each line’s typographi
+/// can fall on a 4dp baseline grid. This allows each line’s typography
 class MaterialMeasurement {}
