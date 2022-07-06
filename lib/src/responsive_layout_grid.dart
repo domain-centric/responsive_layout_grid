@@ -14,42 +14,53 @@ import 'package:flutter/rendering.dart';
 /// providing a convenient layout structure for elements within the body region.
 ///
 /// As the width of the body region grows or shrinks,
-/// the number of grid columns and column widths changes in response.
+/// the number of grid columns and column widths change in response.
 ///
-/// The [ResponsiveLayoutGrid]:
-///  * Has a [minimumColumnWidth]
-///  * Can have a [maxNumberOfColumns]
-///  * Has a [columnGutterWidth]
-///  * Has a [rowGutterHeight]
-///  * A [ResponsiveLayoutFactory] that determines the position of the cells.
+/// The [ResponsiveLayoutGrid] has the following constructor parameters:
+///  * [minimumColumnWidth]
+///  * [maxNumberOfColumns]
+///  * [columnGutterWidth]
+///  * [rowGutterHeight]
+///  * [padding]
+///  * [children] (the cells)
+///  * [layoutFactory] (that determines the position of the cells)
 ///
 ///  All these can be set in the [ResponsiveLayoutGrid] constructor.
 ///
 /// The [ResponsiveLayoutGrid] has children, named cells.
 /// * Cells align with the column grid to create a logical and consistent
-///   layout experience across screen sizes and orientations.
+///   layout experience across screen sizes and orientations:
+///   * The [ResponsiveLayoutGrid] sets de width of the cells.
+///   * The cells can determine their own height, unless the [RowHeight] is set.
 /// * Cells are [Widgets](https://docs.flutter.dev/development/ui/widgets-intro)
 /// * Cells can span one or more columns
 /// * Cells are separated with gutters (separation space)
 ///
-/// It is recommended to wrap a [ResponsiveLayoutGrid] in a:
-/// * [Padding] widget to add outer margins
-/// * [SingleChildScrollView] widget if the cells do not fit and
-///   vertical scrolling is needed.
+/// It is recommended to always directly wrap a [ResponsiveLayoutGrid] in a
+/// [SingleChildScrollView] so that the user can vertically scroll trough
+/// all cells, even when they do not all fit in the viewport.
 
 class ResponsiveLayoutGrid extends StatelessWidget {
   /// The [minimumColumnWidth] determines the number of columns that fit
   /// in the available width and is a [MaterialMeasurement]
   final double minimumColumnWidth;
 
-  /// The [columnGutterWidth] is the space between columns. It is a [MaterialMeasurement].
+  /// The [columnGutterWidth] is the space between columns.
+  /// It is a [MaterialMeasurement].
   final double columnGutterWidth;
 
-  /// The [rowGutterHeight] is the space between rows. It is a [MaterialMeasurement].
+  /// The [rowGutterHeight] is the space between rows.
+  /// It is a [MaterialMeasurement].
   final double rowGutterHeight;
 
-  /// null=unlimited
+  /// Sets the maximum number of columns.
+  /// It will add additional margins left and right to center the columns.
+  /// null=unlimited number of columns (=default)
   final int? maxNumberOfColumns;
+
+  /// Best to use this padding instead of wrapping it with a [Padding] widget in
+  /// case you also want it wrapped with a [SingleChildScrollView]
+  final EdgeInsets padding;
 
   final ResponsiveLayoutFactory layoutFactory;
   final List<Widget> children;
@@ -65,6 +76,7 @@ class ResponsiveLayoutGrid extends StatelessWidget {
     this.columnGutterWidth = defaultGutter,
     this.rowGutterHeight = defaultGutter,
     this.maxNumberOfColumns,
+    this.padding = EdgeInsets.zero,
     this.children = const [],
     this.layoutFactory = defaultLayoutFactory,
   }) : super(key: key);
@@ -92,9 +104,10 @@ class ResponsiveLayoutGrid extends StatelessWidget {
 /// The [ResponsiveLayoutFactory] is responsible for creating a [Layout].
 /// It orders the [children] into a Layout with a given number of columns.
 ///
-/// The [ResponsiveLayoutGrid] uses a [DefaultLayoutFactory] by default, but
-/// you could create your own [ResponsiveLayoutFactory] if you need to
-/// do something outside the box.
+/// The [ResponsiveLayoutGrid] uses a [DefaultLayoutFactory] by default.
+///
+/// You could create your own [ResponsiveLayoutFactory] if you need to
+/// do something outside the box. See [example](https://github.com/domain-centric/responsive_layout_grid_demo/blob/main/lib/columns_example.dart).
 abstract class ResponsiveLayoutFactory {
   Layout create(
     LayoutDimensions layoutDimensions,
@@ -102,7 +115,7 @@ abstract class ResponsiveLayoutFactory {
   );
 }
 
-/// The [CellAlignment] can be set when a [CellPosition].nextRow is used in a
+/// The [RowAlignment] can be set when a [CellPosition].nextRow is used in a
 /// [ResponsiveLayoutCell]. It can be one of the following values:
 /// * left: Align all cells on the left side of the row
 /// * right: Align all cells on the right side of the row
@@ -111,7 +124,7 @@ abstract class ResponsiveLayoutFactory {
 /// * justify: Try to fill the row from left to right by
 ///   increasing or decreasing the [ColumnSpan]s of the cells if needed.
 
-enum CellAlignment {
+enum RowAlignment {
   /// Align all cells on the left side of the row
   left,
 
@@ -135,17 +148,28 @@ class DefaultLayoutFactory implements ResponsiveLayoutFactory {
     LayoutDimensions layoutDimensions,
     List<Widget> children,
   ) {
-    var cellAlignment = CellAlignment.left;
+    var cellAlignment = RowAlignment.left;
+    RowHeight rowHeight = const RowHeightHighestCell();
     List<LayoutRow> rows = [];
-    var row = LayoutRow(layoutDimensions.numberOfColumns, cellAlignment);
+    var row = LayoutRow(
+      totalColumns: layoutDimensions.numberOfColumns,
+      rowAlignment: cellAlignment,
+      rowHeightMode: rowHeight,
+    );
     rows.add(row);
 
     for (var cell in _cells(children)) {
       if (_startOnNewRow(cell, row)) {
-        if (cell.position.type == CellPositionType.nextRow) {
-          cellAlignment = cell.position.newRowAlignment!;
+        if (cell.position is CellPositionNextRow) {
+          var nextRow = (cell.position as CellPositionNextRow);
+          cellAlignment = nextRow.rowAlignment;
+          rowHeight = nextRow.rowHeight;
         }
-        row = LayoutRow(layoutDimensions.numberOfColumns, cellAlignment);
+        row = LayoutRow(
+          totalColumns: layoutDimensions.numberOfColumns,
+          rowAlignment: cellAlignment,
+          rowHeightMode: rowHeight,
+        );
         rows.add(row);
       }
       row.add(cell);
@@ -158,7 +182,7 @@ class DefaultLayoutFactory implements ResponsiveLayoutFactory {
     ResponsiveLayoutCell cell,
     LayoutRow row,
   ) =>
-      cell.position.type == CellPositionType.nextRow || !row.canAddCell(cell);
+      cell.position is CellPositionNextRow || !row.canAddCell(cell);
 
   /// Converts children by wrapping each child in a [ResponsiveLayoutCell]
   /// if it is of another type.
@@ -190,7 +214,8 @@ class DefaultLayoutFactory implements ResponsiveLayoutFactory {
 /// final position or column span
 class LayoutRow {
   final int totalColumns;
-  final CellAlignment cellAlignment;
+  final RowAlignment rowAlignment;
+  final RowHeight rowHeightMode;
 
   /// cells from left to right
   final List<ResponsiveLayoutCell> _cells = [];
@@ -199,19 +224,20 @@ class LayoutRow {
   /// _cellsColumnSpans[index] is the column span of cells[index]
   List<int> _cellColumnSpans = [];
 
-  LayoutRow(
-    this.totalColumns,
-    this.cellAlignment,
-  );
+  LayoutRow({
+    required this.totalColumns,
+    required this.rowAlignment,
+    required this.rowHeightMode,
+  });
 
   bool get isNotEmpty => _cells.isNotEmpty;
 
   /// The number of columns that the first column must fill with emptiness
   int get _alignmentSpan {
-    switch (cellAlignment) {
-      case CellAlignment.right:
+    switch (rowAlignment) {
+      case RowAlignment.right:
         return _freeColumns;
-      case CellAlignment.center:
+      case RowAlignment.center:
         return (_freeColumns / 2).truncate();
       default:
         return 0;
@@ -226,10 +252,10 @@ class LayoutRow {
   /// Score for how well the cells fir the columns.
   /// The higher the score the better the fit and vise versa
   double get score {
-    switch (cellAlignment) {
-      case CellAlignment.justify:
+    switch (rowAlignment) {
+      case RowAlignment.justify:
         return _alignJustifiedScore + _columnSpanScore / 1000;
-      case CellAlignment.center:
+      case RowAlignment.center:
         return _alignCenterScore + _columnSpanScore / 1000;
       default:
         return _columnSpanScore;
@@ -291,7 +317,7 @@ class LayoutRow {
   }
 
   /// Adds this [LayoutRow] to a [Layout]
-  void addToLayout(int rowNr, Layout layout) {
+  void addToLayout(int rowNumber, Layout layout) {
     var columnNr = Layout.firstColumn + _alignmentSpan;
 
     for (int i = 0; i < _cells.length; i++) {
@@ -300,7 +326,8 @@ class LayoutRow {
       layout.addCell(
           leftColumn: columnNr,
           columnSpan: columnSpan,
-          row: rowNr,
+          rowNumber: rowNumber,
+          rowHeightMode: rowHeightMode,
           cell: cell.child);
       columnNr += columnSpan;
     }
@@ -311,11 +338,11 @@ class LayoutRow {
 
     _shrinkColumnSpansToFitInRow();
 
-    switch (cellAlignment) {
-      case CellAlignment.justify:
+    switch (rowAlignment) {
+      case RowAlignment.justify:
         _growColumnSpansToJustifyRow();
         break;
-      case CellAlignment.center:
+      case RowAlignment.center:
         _changeColumnSpansToCenterRow();
         break;
       default:
@@ -468,7 +495,9 @@ class LayoutCellParentData extends ContainerBoxParentData<RenderBox> {
 
   /// row number where the top of the cell starts in the layout
   /// [Layout.firstRow]=first row
-  int? row;
+  int? rowNumber;
+
+  RowHeight? rowHeightMode;
 
   /// Numbers of columns that the cell spans
   int? columnSpan;
@@ -482,7 +511,8 @@ class LayoutCell extends ParentDataWidget<LayoutCellParentData> {
     required this.dimensions,
     required this.leftColumn,
     required this.columnSpan,
-    required this.row,
+    required this.rowNumber,
+    required this.rowHeightMode,
     required Widget child,
   }) : super(key: key, child: child);
 
@@ -498,14 +528,18 @@ class LayoutCell extends ParentDataWidget<LayoutCellParentData> {
 
   /// row number where the top of the cell starts in the layout
   /// [Layout.firstRow]=first row
-  final int row;
+  final int rowNumber;
+
+  final RowHeight rowHeightMode;
 
   /// Numbers of columns that the cell spans
   final int columnSpan;
 
   /// returns true is this [LayoutCell] is located on given row and column
-  bool occupies({required int column, required int row}) =>
-      row == this.row && column >= leftColumn && column <= rightColumn;
+  bool occupies({required int column, required int rowNumber}) =>
+      rowNumber == this.rowNumber &&
+      column >= leftColumn &&
+      column <= rightColumn;
 
   @override
   void applyParentData(RenderObject renderObject) {
@@ -524,8 +558,13 @@ class LayoutCell extends ParentDataWidget<LayoutCellParentData> {
       needsLayout = true;
     }
 
-    if (parentData.row != row) {
-      parentData.row = row;
+    if (parentData.rowNumber != rowNumber) {
+      parentData.rowNumber = rowNumber;
+      needsLayout = true;
+    }
+
+    if (parentData.rowHeightMode != rowHeightMode) {
+      parentData.rowHeightMode = rowHeightMode;
       needsLayout = true;
     }
 
@@ -572,19 +611,21 @@ class Layout {
       _cells.isNotEmpty && dimensions.numberOfColumns > 0;
 
   get cellsOrderedByRow {
-    _cells.sort((a, b) => a.row.compareTo(b.row));
+    _cells.sort((a, b) => a.rowNumber.compareTo(b.rowNumber));
     return _cells;
   }
 
   addCell({
     required int leftColumn,
     required int columnSpan,
-    required int row,
+    required int rowNumber,
+    required RowHeight rowHeightMode,
     required Widget cell,
   }) {
     var layoutCell = LayoutCell(
       dimensions: dimensions,
-      row: row,
+      rowNumber: rowNumber,
+      rowHeightMode: rowHeightMode,
       leftColumn: leftColumn,
       columnSpan: columnSpan,
       child: cell,
@@ -615,7 +656,7 @@ class Layout {
   }
 
   void _verifyIfPositionIsFree(LayoutCell layoutCell) {
-    int row = layoutCell.row;
+    int row = layoutCell.rowNumber;
     for (int column = layoutCell.leftColumn;
         column < layoutCell.rightColumn;
         column++) {
@@ -627,16 +668,16 @@ class Layout {
   }
 
   bool hasCell(int row, int column) =>
-      _cells.any((cell) => cell.occupies(column: column, row: row));
+      _cells.any((cell) => cell.occupies(column: column, rowNumber: row));
 
   List<int> get _rowNrs {
-    var rowNrs = _cells.map((cell) => cell.row).toSet().toList();
+    var rowNrs = _cells.map((cell) => cell.rowNumber).toSet().toList();
     rowNrs.sort();
     return rowNrs;
   }
 
   List<LayoutCell> _cellsInRowLeftToRight(int row) {
-    var cellsInRow = _cells.where((cell) => cell.row == row).toList();
+    var cellsInRow = _cells.where((cell) => cell.rowNumber == row).toList();
     cellsInRow
         .sort((cell1, cell2) => cell1.leftColumn.compareTo(cell2.leftColumn));
     return cellsInRow;
@@ -660,8 +701,8 @@ class Layout {
     }
   }
 
-  int availableColumns(int row, CellAlignment cellAlignment) =>
-      cellAlignment == CellAlignment.right
+  int availableColumns(int row, RowAlignment cellAlignment) =>
+      cellAlignment == RowAlignment.right
           ? availableColumnsLeft(row)
           : availableColumnsRight(row);
 }
@@ -684,12 +725,19 @@ class LayoutDimensions {
 
   late bool hasVisibleColumns;
 
+  late EdgeInsets padding;
+
   LayoutDimensions(ResponsiveLayoutGrid responsiveLayout, Size size) {
     columnGutterWidth = responsiveLayout.columnGutterWidth;
     rowGutterHeight = responsiveLayout.rowGutterHeight;
-    numberOfColumns = _calculateNrOfColumns(responsiveLayout, size.width);
-    marginWidth = _calculateMargin(responsiveLayout, size.width);
-    columnWidth = _calculateColumnWidth(size.width - 2 * marginWidth);
+    padding = responsiveLayout.padding;
+    var width = size.width - padding.left - padding.right;
+    if (width < 0) {
+      width = 0;
+    }
+    numberOfColumns = _calculateNrOfColumns(responsiveLayout, width);
+    marginWidth = _calculateMargin(responsiveLayout, width);
+    columnWidth = _calculateColumnWidth(width - 2 * marginWidth);
     hasVisibleColumns = numberOfColumns > 0 && columnWidth > 0;
   }
 
@@ -739,11 +787,18 @@ class LayoutDimensions {
     }
   }
 
-  Offset cellOffSet(int cellLeftColumn, double y) {
-    var precedingColumnWidths = (cellLeftColumn - 1) * columnWidth;
-    var precedingColumnGutters = (cellLeftColumn - 1) * columnGutterWidth;
-    var x = marginWidth + precedingColumnWidths + precedingColumnGutters;
-    return Offset(x, y);
+  /// x position of the left side of the cell
+  double cellLeft(int leftColumn) {
+    var precedingColumnWidths = (leftColumn - 1) * columnWidth;
+    var precedingColumnGutters = (leftColumn - 1) * columnGutterWidth;
+    return marginWidth +
+        precedingColumnWidths +
+        precedingColumnGutters +
+        padding.left;
+  }
+
+  double cellWidth(int columnSpan) {
+    return columnSpan * columnWidth + (columnSpan - 1) * columnGutterWidth;
   }
 
   @override
@@ -768,37 +823,146 @@ class LayoutDimensions {
       hasVisibleColumns.hashCode;
 }
 
-enum CellPositionType { nextColumn, nextRow }
-
 /// A [ResponsiveLayoutCell] has a [CellPosition]. There are 2 types:
 /// * nextColumn: The cell is to be positioned on the next available column.
 ///   This could be on the next row if there aren't enough empty columns
 ///   on the current row.
 /// * nextRow: The cell is to be positioned on a new row.
-///   You can set the [CellAlignment] for every new row.
-class CellPosition {
-  final CellPositionType type;
+///   You can set the [RowAlignment] or [RowHeight] for every new row.
+abstract class CellPosition {
+  const CellPosition();
 
-  /// Only has a value for the next Row
-  final CellAlignment? newRowAlignment;
+  factory CellPosition.nextColumn() => const CellPositionNextColumn();
 
-  const CellPosition.nextColumn()
-      : type = CellPositionType.nextColumn,
-        newRowAlignment = null;
+  factory CellPosition.nextRow({
+    RowAlignment rowAlignment = RowAlignment.left,
+    RowHeight rowHeight = const RowHeightHighestCell(),
+  }) =>
+      CellPositionNextRow(rowAlignment: rowAlignment, rowHeight: rowHeight);
+}
 
-  const CellPosition.nextRow([this.newRowAlignment = CellAlignment.left])
-      : type = CellPositionType.nextRow;
+class CellPositionNextColumn extends CellPosition {
+  const CellPositionNextColumn();
+}
+
+class CellPositionNextRow extends CellPosition {
+  final RowAlignment rowAlignment;
+  final RowHeight rowHeight;
+
+  const CellPositionNextRow(
+      {this.rowAlignment = RowAlignment.left,
+      this.rowHeight = const RowHeightHighestCell()});
 
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is CellPosition &&
+      super == other &&
+          other is CellPositionNextRow &&
           runtimeType == other.runtimeType &&
-          type == other.type &&
-          newRowAlignment == other.newRowAlignment;
+          rowAlignment == other.rowAlignment &&
+          rowHeight == other.rowHeight;
 
   @override
-  int get hashCode => type.hashCode ^ newRowAlignment.hashCode;
+  int get hashCode =>
+      super.hashCode ^ rowAlignment.hashCode ^ rowHeight.hashCode;
+}
+
+/// The [RowHeight] is used as a parameter in
+/// [CellPosition].nextRow.
+/// It defines how high the following row.
+///
+/// There are 2 types of row heights:
+/// * highestCell: The row will get the height of the highest
+///   [ResponsiveLayoutCell]
+/// * expanded: The row will get the remaining available height.
+///   If multiple rows are expanded, the available space is divided
+///   among them according to the [minHeight], but also respecting
+///   [maxHeight].
+///
+/// Both types can have a [minHeight] and a [maxHeight]
+///
+/// The [minHeight] of the [ResponsiveLayoutCell]:
+/// * null= no minimum height ([ResponsiveLayoutCell] can shrink to zero)
+/// * &gt;0 = [ResponsiveLayoutCell] minimum size.
+///   Note that the [RenderResponsiveLayout] children now can take up
+///   more space than available. It is therefore recommended to wrap
+///   the [RenderResponsiveLayout] inside a [SingleChildScrollView] or
+///   other scrollview
+///
+/// The [maxHeight] of the [ResponsiveLayoutCell]:
+/// * null= no maximum height ([ResponsiveLayoutCell] can shrink to zero)
+/// * &gt;0 = [ResponsiveLayoutCell] maximum size.
+
+abstract class RowHeight {
+  final double? minHeight;
+
+  final double? maxHeight;
+
+  factory RowHeight.highestCell({
+    double? minHeight,
+    double? maxHeight,
+  }) =>
+      RowHeightHighestCell(minHeight: minHeight, maxHeight: maxHeight);
+
+  factory RowHeight.expanded({
+    required double minHeight,
+    double? maxHeight,
+  }) =>
+      RowHeightExpanded(
+        minHeight: minHeight,
+        maxHeight: maxHeight,
+      );
+
+  const RowHeight({this.minHeight, this.maxHeight})
+      : assert(minHeight == null ||
+            maxHeight == null ||
+            minHeight >= 0 ||
+            maxHeight >= 0 ||
+            minHeight < maxHeight);
+}
+
+/// The row will get the height of the highest [ResponsiveLayoutCell]
+/// in the row, respecting [minHeight] and [maxHeight].
+class RowHeightHighestCell extends RowHeight {
+  const RowHeightHighestCell({
+    double? minHeight,
+    double? maxHeight,
+  }) : super(minHeight: minHeight, maxHeight: maxHeight);
+
+  double calculate(double highestCell) {
+    var rowHeight = highestCell;
+    if (minHeight != null && minHeight! > rowHeight) {
+      rowHeight = minHeight!;
+    }
+    if (maxHeight != null && maxHeight! < rowHeight) {
+      rowHeight = maxHeight!;
+    }
+    return rowHeight;
+  }
+}
+
+/// The row will get the remaining available height,
+/// much like the [Expanded] [Widget] inside a [Row] or [Column]
+
+class RowHeightExpanded extends RowHeight {
+  const RowHeightExpanded({
+    /// If multiple rows are expanded, the available space is divided
+    /// among them according to the [minHeight], but also respecting
+    /// [maxHeight]. [minHeight] therefore is required.
+    required double minHeight,
+    double? maxHeight,
+  }) : super(minHeight: minHeight, maxHeight: maxHeight);
+
+  double calculate(double flexFactor) {
+    var rowHeight = flexFactor * minHeight!;
+    if (minHeight! > rowHeight) {
+      rowHeight = minHeight!;
+    }
+    if (maxHeight != null && maxHeight! < rowHeight) {
+      rowHeight = maxHeight!;
+    }
+    return rowHeight;
+  }
 }
 
 /// You can wrap your cell [Widget](https://docs.flutter.dev/development/ui/widgets-intro)s
@@ -806,8 +970,8 @@ class CellPosition {
 /// so that you can provide the following information of the
 /// cell [Widget](https://docs.flutter.dev/development/ui/widgets-intro)
 /// (the [child]):
-/// * [CellPosition] of the cell Widget.
 /// * [ColumnSpan] of the cell Widget.
+/// * [CellPosition] of the cell Widget.
 class ResponsiveLayoutCell extends StatelessWidget {
   final CellPosition position;
   final ColumnSpan columnSpan;
@@ -815,7 +979,7 @@ class ResponsiveLayoutCell extends StatelessWidget {
 
   const ResponsiveLayoutCell({
     Key? key,
-    this.position = const CellPosition.nextColumn(),
+    this.position = const CellPositionNextColumn(),
     this.columnSpan = const ColumnSpan.size(1),
     required this.child,
   }) : super(key: key);
@@ -831,7 +995,7 @@ class ResponsiveLayoutCell extends StatelessWidget {
 /// will try to use these values, but may also decide to use different values
 /// e.g.:
 /// * When the number of available columns exceed [min] or [max]
-/// * When the [CellAlignment.center] or [CellAlignment.justify] are used.
+/// * When the [RowAlignment.center] or [RowAlignment.justify] are used.
 ///   In these cases it is good practice to have some distance between the
 ///   [min], [preferred] and [max] values, so that the [DefaultLayoutFactory]
 ///   has some flexibility to optimize the layout.
@@ -1003,44 +1167,131 @@ class RenderResponsiveLayoutBox extends RenderBox
       return;
     }
 
+    var renderRows = _createRenderRows();
+    _calculateRenderRowHeights(renderRows);
+    _layoutRenderRows(renderRows);
+  }
+
+  void _layoutRenderRows(List<RenderRow> renderRows) {
+    var dimensions = _findDimensions(renderRows);
+    double rowGutterHeight =
+        dimensions == null ? 0 : dimensions.rowGutterHeight;
+    double topPadding = dimensions == null ? 0 : dimensions.padding.top;
     double y = 0;
+    for (var renderRow in renderRows) {
+      if (y == 0) {
+        y = topPadding;
+      } else {
+        y += rowGutterHeight;
+      }
+      for (var renderCell in renderRow.renderCells) {
+        renderCell.renderBox.layout(renderCell.constraints(renderRow.height),
+            parentUsesSize: true);
+        (renderCell.renderBox.parentData as LayoutCellParentData).offset =
+            Offset(renderCell.left, y);
+      }
+      y += renderRow.height;
+    }
+    double bottomPadding = dimensions == null ? 0 : dimensions.padding.bottom;
+    size = Size(constraints.biggest.width, y + bottomPadding);
+  }
+
+  void _calculateRenderRowHeights(List<RenderRow> renderRows) {
+    var totalFixedRowHeight = calculateFixedRowHeights(renderRows);
+    _calculateExpandedRowHeights(renderRows, totalFixedRowHeight);
+  }
+
+  void _calculateExpandedRowHeights(
+      List<RenderRow> renderRows, double totalFixedRowHeight) {
+    var flexFactor = _flexFactor(renderRows, totalFixedRowHeight);
+    for (var renderRow in renderRows) {
+      renderRow.calculateExpandedHeight(flexFactor);
+    }
+  }
+
+  double _flexFactor(List<RenderRow> renderRows, double totalFixedRowHeight) {
+    var dimensions = _findDimensions(renderRows);
+    var topAndBottomPadding = dimensions == null
+        ? 0
+        : dimensions.padding.top + dimensions.padding.bottom;
+    var totalExpandedMinHeight = _totalExpandedMinHeight(renderRows);
+    var totalRowGutterHeight = _totalRowGutterHeight(renderRows, dimensions);
+    var totalRequiredHeight = totalFixedRowHeight +
+        totalExpandedMinHeight +
+        totalRowGutterHeight +
+        topAndBottomPadding;
+    var viewHeight = _findParentHeight(parent);
+
+    if (totalRequiredHeight > viewHeight) {
+      /// [ResponsiveLayoutCell]s do NOT fit in the available
+      /// [ResponsiveGridLayout] height (best to use a scroll view)
+      if (constraints.maxHeight != double.infinity) {
+        throw Exception(
+            "Wrap RenderResponsiveLayout in a SingleChildScrollView to ensure it fits!");
+      }
+
+      /// Fex factor 1 = Use the minimum height of the [RenderRow]
+      return 1;
+    } else {
+      /// [ResponsiveLayoutCell]s DO fit in the available
+      /// [ResponsiveGridLayout] height: calculate the flex factor
+      double remainingHeight = viewHeight -
+          totalFixedRowHeight -
+          totalRowGutterHeight -
+          topAndBottomPadding;
+      if (remainingHeight < 0) {
+        remainingHeight = 0;
+      }
+      return remainingHeight / totalExpandedMinHeight;
+    }
+  }
+
+  double _totalExpandedMinHeight(List<RenderRow> renderRows) {
+    double total = 0;
+    for (var renderRow in renderRows) {
+      if (renderRow.rowHeightMode != null &&
+          renderRow.rowHeightMode!.minHeight != null) {
+        total += renderRow.rowHeightMode!.minHeight!;
+      }
+    }
+    return total;
+  }
+
+  double calculateFixedRowHeights(List<RenderRow> renderRows) {
+    return renderRows
+        .map((renderRow) => renderRow.calculateFixedHeight())
+        .reduce((totalHeight, height) => totalHeight + height);
+  }
+
+  List<RenderRow> _createRenderRows() {
     int rowNrOfPreviousCell = 0;
 
     RenderBox? child = firstChild;
-    double highestCell = 0;
+
+    var row = RenderRow();
+    List<RenderRow> rows = [];
+
     while (child != null) {
       final LayoutCellParentData childParentData =
           child.parentData as LayoutCellParentData;
 
-      final dimensions = childParentData.dimensions!;
-
-      if (childParentData.row != rowNrOfPreviousCell) {
-        //new row
-        rowNrOfPreviousCell = childParentData.row!;
-        if (highestCell > 0) {
-          y += dimensions.rowGutterHeight;
+      if (childParentData.rowNumber != rowNrOfPreviousCell) {
+        if (row.isNotEmpty) {
+          rows.add(row);
         }
-        y += highestCell;
-        highestCell = 0;
+        //new row
+        row = RenderRow();
+        rowNrOfPreviousCell = childParentData.rowNumber!;
       }
 
-      var cellWidth = _cellWidth(childParentData, dimensions);
-      child.layout(BoxConstraints(minWidth: cellWidth, maxWidth: cellWidth),
-          parentUsesSize: true);
-      childParentData.offset =
-          dimensions.cellOffSet(childParentData.leftColumn!, y);
-      highestCell = max(highestCell, child.size.height);
+      row.add(child);
 
       child = childParentData.nextSibling;
     }
-
-    size = Size(constraints.biggest.width, y + highestCell);
-  }
-
-  double _cellWidth(
-      LayoutCellParentData childParentData, LayoutDimensions dimensions) {
-    return childParentData.columnSpan! * dimensions.columnWidth +
-        (childParentData.columnSpan! - 1) * dimensions.columnGutterWidth;
+    if (row.isNotEmpty) {
+      rows.add(row);
+    }
+    return rows;
   }
 
   @override
@@ -1051,6 +1302,121 @@ class RenderResponsiveLayoutBox extends RenderBox
   @override
   bool hitTestChildren(BoxHitTestResult result, {required Offset position}) {
     return defaultHitTestChildren(result, position: position);
+  }
+
+  LayoutDimensions? _findDimensions(List<RenderRow> renderRows) {
+    for (var renderRow in renderRows) {
+      for (var renderCell in renderRow.renderCells) {
+        return renderCell.dimensions;
+      }
+    }
+    return null;
+  }
+
+  double _totalRowGutterHeight(
+    List<RenderRow> renderRows,
+    LayoutDimensions? dimensions,
+  ) {
+    var numberOfGutters = renderRows.isEmpty ? 0 : renderRows.length - 1;
+    double rowGutterHeight =
+        dimensions == null ? 0 : dimensions.rowGutterHeight;
+    return rowGutterHeight * numberOfGutters;
+  }
+
+  double _findParentHeight(AbstractNode? parent) {
+    if (parent != null && parent is RenderBox) {
+      if (parent.constraints.maxHeight == double.infinity) {
+        // try to find a higher parent recursively
+        return _findParentHeight(parent.parent);
+      } else {
+        // found it
+        return parent.constraints.maxHeight;
+      }
+    } else {
+      // will not find a value other than infinity
+      return double.infinity;
+    }
+  }
+}
+
+/// Wrapper for a cell RenderBox containing additional information
+class RenderCell {
+  late RenderBox renderBox;
+  late LayoutDimensions dimensions;
+  late double left;
+  late double width;
+  late double intrinsicHeight;
+  late RowHeight rowHeightMode;
+
+  RenderCell(this.renderBox) {
+    var parentData = renderBox.parentData as LayoutCellParentData;
+    dimensions = parentData.dimensions!;
+    rowHeightMode = parentData.rowHeightMode!;
+    left = dimensions.cellLeft(parentData.leftColumn!);
+    width = dimensions.cellWidth(parentData.columnSpan!);
+    intrinsicHeight = renderBox.getMaxIntrinsicHeight(width);
+  }
+
+  Constraints constraints(double maxRowHeight) {
+    return BoxConstraints(
+      minWidth: 0,
+      maxWidth: width,
+      minHeight: 0,
+      maxHeight: maxRowHeight,
+    );
+  }
+}
+
+class RenderRow {
+  double height = 0;
+  final List<RenderCell> renderCells = [];
+
+  RenderRow();
+
+  RowHeight? _cashedRowHeightMode;
+
+  RowHeight? get rowHeightMode {
+    if (_cashedRowHeightMode == null && renderCells.isNotEmpty) {
+      _cashedRowHeightMode = renderCells.first.rowHeightMode;
+    }
+    return _cashedRowHeightMode;
+  }
+
+  double calculateFixedHeight() {
+    if (rowHeightMode is! RowHeightHighestCell) {
+      return 0;
+    }
+    var highestCellHeight =
+        renderCells.map((cell) => cell.intrinsicHeight).reduce(max);
+    height =
+        (rowHeightMode as RowHeightHighestCell).calculate(highestCellHeight);
+    _validateHeight(height);
+    return height;
+  }
+
+  double calculateExpandedHeight(double flexFactor) {
+    if (rowHeightMode is! RowHeightExpanded) {
+      return 0;
+    }
+    height = (rowHeightMode as RowHeightExpanded).calculate(flexFactor);
+    _validateHeight(height);
+    return height;
+  }
+
+  void add(RenderBox cell) {
+    var renderCell = RenderCell(cell);
+    renderCells.add(renderCell);
+  }
+
+  bool get isNotEmpty => renderCells.isNotEmpty;
+
+  void _validateHeight(double height) {
+    if (height == double.infinity) {
+      throw Exception("Cell has unbounded height. "
+          "Bound the height of the cell using "
+          "CellPosition.nextRow(maxHeight) or by constraining the "
+          "cell widget.");
+    }
   }
 }
 
