@@ -1,4 +1,4 @@
-[//]: # (This file was generated from: doc/template/README.mdt using the documentation_builder package on: 2022-07-06 20:45:51.986021.)
+[//]: # (This file was generated from: doc/template/README.mdt using the documentation_builder package on: 2022-07-07 08:02:18.735324.)
 <a id='doc-template-badges-mdt'></a>[![Pub Package](https://img.shields.io/pub/v/responsive_layout_grid)](https://pub.dev/packages/responsive_layout_grid)
 [![Code Repository](https://img.shields.io/badge/repository-git%20hub-informational)](https://github.com/domain-centric/responsive_layout_grid)
 [![Github Wiki](https://img.shields.io/badge/documentation-wiki-informational)](https://github.com/domain-centric/responsive_layout_grid/wiki)
@@ -42,12 +42,12 @@ has children, named cells.
 
 * Cells align with the column grid to create a logical and consistent layout experience across
   screen sizes and orientations:
-  *
-  The [ResponsiveLayoutGrid](https://github.com/domain-centric/responsive_layout_grid/wiki/01-ResponsiveLayoutGrid#responsivelayoutgrid)
-  sets de width of the cells.
-  * The cells can determine their own height, unless
-    the [RowHeight](https://github.com/domain-centric/responsive_layout_grid/wiki/01-ResponsiveLayoutGrid#rowheight)
-    is set.
+    *
+    The [ResponsiveLayoutGrid](https://github.com/domain-centric/responsive_layout_grid/wiki/01-ResponsiveLayoutGrid#responsivelayoutgrid)
+    sets de width of the cells.
+    * The cells can determine their own height, unless
+      the [RowHeight](https://github.com/domain-centric/responsive_layout_grid/wiki/01-ResponsiveLayoutGrid#rowheight)
+      is set.
 * Cells are [Widgets](https://docs.flutter.dev/development/ui/widgets-intro)
 * Cells can span one or more columns
 * Cells are separated with gutters (separation space)
@@ -74,8 +74,8 @@ the cell [Widget](https://docs.flutter.dev/development/ui/widgets-intro)
 * [CellPosition](https://github.com/domain-centric/responsive_layout_grid/wiki/01-ResponsiveLayoutGrid#cellposition)
   of the cell Widget.
 
-<a id='columnspan'></a>
 
+<a id='columnspan'></a>
 ## ColumnSpan
 
 A [ColumnSpan](https://github.com/domain-centric/responsive_layout_grid/wiki/01-ResponsiveLayoutGrid#columnspan)
@@ -187,7 +187,5 @@ See [example](https://github.com/domain-centric/responsive_layout_grid_demo/blob
 .
 
 <a id='examples'></a>
-
 # Examples
-
 [See the live web demo including source code](https://domain-centric.github.io/responsive_layout_grid_demo_web)
