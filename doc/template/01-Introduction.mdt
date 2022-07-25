@@ -1,0 +1,11 @@
+The [ResponsiveLayoutGrid] creates a [Responsive Layout Grid as defined in the Material design guidelines](https://m3.material.io/foundations/adaptive-design/large-screens)
+
+![](https://github.com/domain-centric/responsive_layout_grid/wiki/columns.gif)
+
+The [ResponsiveLayoutGrid] is made up of columns and gutters,
+providing a convenient layout structure for elements within the body region.
+
+As the width of the body region grows or shrinks,
+the number of grid columns and column widths change in response.
+
+![](https://github.com/domain-centric/responsive_layout_grid/wiki/form.gif)

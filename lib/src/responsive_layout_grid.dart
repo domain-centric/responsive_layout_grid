@@ -8,14 +8,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 
-/// Creates a [Responsive Layout Grid as defined in the Material design guidelines](https://m3.material.io/foundations/adaptive-design/large-screens)
-///
-/// The [ResponsiveLayoutGrid] is made up of columns and gutters,
-/// providing a convenient layout structure for elements within the body region.
-///
-/// As the width of the body region grows or shrinks,
-/// the number of grid columns and column widths change in response.
-///
 /// The [ResponsiveLayoutGrid] has the following constructor parameters:
 ///  * [minimumColumnWidth]
 ///  * [maxNumberOfColumns]
@@ -24,8 +16,6 @@ import 'package:flutter/rendering.dart';
 ///  * [padding]
 ///  * [children] (the cells)
 ///  * [layoutFactory] (that determines the position of the cells)
-///
-///  All these can be set in the [ResponsiveLayoutGrid] constructor.
 ///
 /// The [ResponsiveLayoutGrid] has children, named cells.
 /// * Cells align with the column grid to create a logical and consistent
@@ -107,7 +97,7 @@ class ResponsiveLayoutGrid extends StatelessWidget {
 /// The [ResponsiveLayoutGrid] uses a [DefaultLayoutFactory] by default.
 ///
 /// You could create your own [ResponsiveLayoutFactory] if you need to
-/// do something outside the box. See [example](https://github.com/domain-centric/responsive_layout_grid_demo/blob/main/lib/columns_example.dart).
+/// do something outside the box. See [example](https://github.com/domain-centric/responsive_layout_grid_demo/blob/main/lib/column_example.dart).
 abstract class ResponsiveLayoutFactory {
   Layout create(
     LayoutDimensions layoutDimensions,
@@ -869,7 +859,7 @@ class CellPositionNextRow extends CellPosition {
 
 /// The [RowHeight] is used as a parameter in
 /// [CellPosition].nextRow.
-/// It defines how high the following row.
+/// It defines the height the following row.
 ///
 /// There are 2 types of row heights:
 /// * highestCell: The row will get the height of the highest
