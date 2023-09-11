@@ -5,15 +5,15 @@ repository: https://github.com/domain-centric/responsive_layout_grid
 documentation: https://github.com/domain-centric/responsive_layout_grid/wiki
 
 environment:
-  sdk: ">=2.17.1 <3.0.0"
+  sdk: '^3.0.0'
 
 dependencies:
   flutter:
     sdk: flutter
 
 dev_dependencies:
-  flutter_lints: ^2.0.1
-  documentation_builder: ^0.0.12
+  flutter_lints: ^2.0.3
+  documentation_builder: ^0.0.14
 
 flutter:
   uses-material-design: true

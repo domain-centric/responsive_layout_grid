@@ -4,7 +4,7 @@
 
 import 'dart:math';
 
-import 'package:flutter/foundation.dart';
+//import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 
@@ -564,7 +564,7 @@ class LayoutCell extends ParentDataWidget<LayoutCellParentData> {
     }
 
     if (needsLayout) {
-      final AbstractNode? targetParent = renderObject.parent;
+      var targetParent = renderObject.parent;
       if (targetParent is RenderObject) {
         targetParent.markNeedsLayout();
       }
@@ -877,7 +877,7 @@ class CellPositionNextRow extends CellPosition {
 ///   Note that the [RenderResponsiveLayout] children now can take up
 ///   more space than available. It is therefore recommended to wrap
 ///   the [RenderResponsiveLayout] inside a [SingleChildScrollView] or
-///   other scrollview
+///   other scroll view
 ///
 /// The [maxHeight] of the [ResponsiveLayoutCell]:
 /// * null= no maximum height ([ResponsiveLayoutCell] can shrink to zero)
@@ -1078,7 +1078,7 @@ class ColumnSpan {
 
 /// Renders the [ResponsiveLayoutGrid]
 class RenderResponsiveLayout extends MultiChildRenderObjectWidget {
-  RenderResponsiveLayout({
+  const RenderResponsiveLayout({
     Key? key,
     List<LayoutCell> layoutCells = const [],
   }) : super(key: key, children: layoutCells);
@@ -1313,7 +1313,7 @@ class RenderResponsiveLayoutBox extends RenderBox
     return rowGutterHeight * numberOfGutters;
   }
 
-  double _findParentHeight(AbstractNode? parent) {
+  double _findParentHeight(RenderObject? parent) {
     if (parent != null && parent is RenderBox) {
       if (parent.constraints.maxHeight == double.infinity) {
         // try to find a higher parent recursively
